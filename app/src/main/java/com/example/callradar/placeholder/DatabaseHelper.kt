@@ -279,12 +279,12 @@ class DatabaseHelper(private val appContext: Context) :
         return Pair(formattedNumber, country)
     }
 
-    fun searchPhone(phone: String): Any {
+    fun searchPhone(phone: String): String {
         val (formattedPhoneNumber, country) = formatPhoneNumber(phone)
-        val results = mutableListOf<Map<String, Any>>()
+        var result :  String = ""
 
         if (formattedPhoneNumber.length <= 3) {
-            return mapOf("error" to "Неверный номер телефона")
+           Log.d ("searchPhone","Неверный номер телефона")
         }
 
         if (country == "Россия") {
@@ -292,36 +292,48 @@ class DatabaseHelper(private val appContext: Context) :
             val number = try {
                 formattedPhoneNumber.drop(3).toInt()
             } catch (e: NumberFormatException) {
-                return mapOf("error" to "Номер телефона должен быть числом")
+                Log.d ("searchPhone","Номер телефона должен быть числом")
             }
             try {
                 val cursor = readableDatabase.rawQuery("SELECT * FROM phones WHERE Код = $kod AND $number >= От AND $number <= До", null)
                 while (cursor.moveToNext()) {
-                    val region = cursor.getString(cursor.getColumnIndexOrThrow("Регион"))
-                    val result = mapOf(
-                        "Номер" to phone,
+                    var region = cursor.getString(cursor.getColumnIndexOrThrow("Регион"))
+                    var formattedRegion = region
+
+                    if (formattedRegion.contains("|")) {
+                        formattedRegion = formattedRegion.split("|")[0] // Оставляем только часть до символа "|"
+                    }
+                    if (formattedRegion.contains("*")) {
+                        formattedRegion = formattedRegion.split("*")[0] // Оставляем только часть до символа "*"
+                    }
+
+                    val resultMap = mapOf(
+                        "Телефон" to phone,
                         "Код" to kod,
                         "Номер" to number,
-                        "Регион" to region
+                        "Регион" to formattedRegion
                     )
-                    results.add(result)
-                    Log.d("StartLog", "Phone: $kod, $number, $region")
+                    result = formattedRegion
+                    Log.d("StartLog", "Result: $resultMap")
+                    return result
+
                 }
                 cursor.close()
-                Log.d("StartLog", "Result: $results")
             } catch (e: SQLException) {
                 Log.e("DatabaseHelper", "Error querying phone number: ${e.message}", e)
             }
 
         } else {
-            val result = mapOf(
-                "Номер" to phone,
+            val resultMap = mapOf(
+                "Телефон" to phone,
                 "Страна" to country
             )
-            results.add(result)
+            result = country
+            Log.d("StartLog", "Result: $resultMap")
+            return result
         }
-        return results
-        Log.d("StartLog", "Result: $results")
+        return result
+
     }
 
 }

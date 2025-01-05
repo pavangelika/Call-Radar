@@ -133,7 +133,7 @@ class ItemListFragment : Fragment() {
             val item = callLogs[position]
 //            Log.d("bundleLog", "callog $item")
             val search = helper.searchPhone(item.number)
-            Log.d("searchPhone", "searchPhone $search")
+            Log.d("numbersLog", "${item.number}")
 
             holder.idView.text = item.type.toString() // Тип звонка
             holder.contentView.text =  when {

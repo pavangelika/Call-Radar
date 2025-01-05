@@ -15,6 +15,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
     }
 
     buildTypes {
@@ -36,11 +37,15 @@ android {
     buildFeatures {
         viewBinding = true
     }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
+    ndkVersion = rootProject.extra["ndkVersion"] as String
 }
 
 dependencies {
-    implementation("androidx.core:core-ktx:1.9.0")  // Для работы с разрешениями
-    implementation ("androidx.appcompat:appcompat:1.6.1")
+    implementation("androidx.core:core-ktx:1.15.0")  // Для работы с разрешениями
+    implementation("androidx.appcompat:appcompat:1.7.0")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

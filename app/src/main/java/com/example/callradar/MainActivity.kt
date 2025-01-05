@@ -63,8 +63,8 @@ class MainActivity : AppCompatActivity() {
                         }.show()
 
                 } else {
-                    Log.d("StartLog", "Разрешение на наложение поверх других приложений выдано")
-                    Log.d("StartLog", "Запрос разрешений на звонки, контакты и т.д.")
+                    Log.d("StartLog", "MainActivity: Разрешение на наложение поверх других приложений выдано")
+                    Log.d("StartLog", "MainActivity: Запрос разрешений на звонки, контакты и т.д.")
                     binding.tvPrms.text = "Для получения информации о звонках необходимо разрешить:"
                     checkAndRequestPermissions()
 
@@ -142,8 +142,8 @@ class MainActivity : AppCompatActivity() {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }
         if (missingPermissions.isEmpty() and Settings.canDrawOverlays(this)) {
-            Log.d("StartLog", "Разрешения выданы")
-            Log.d("StartLog", "Переход к журналу звонков")
+            Log.d("StartLog", "MainActivity: Разрешения выданы")
+            Log.d("StartLog", "MainActivity: Переход к журналу звонков")
             viewCallLog()
         } else {
             Log.d("StartLog", "$missingPermissions - НЕ ЗАПРОШЕНО")
@@ -187,7 +187,7 @@ class MainActivity : AppCompatActivity() {
             requestPermissionsLauncher.launch(missingPermissions.toTypedArray())
         } else {
             binding.tvPrms.text = "Разрешения предоставлены"
-            Log.d("StartLog", "Разрешения предоставлены")
+            Log.d("StartLog", "MainActivity: Разрешения предоставлены")
         }
     }
 

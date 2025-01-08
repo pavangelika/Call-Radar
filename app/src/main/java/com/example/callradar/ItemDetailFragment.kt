@@ -10,9 +10,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import com.example.callradar.calls.CallDetail
 import com.example.callradar.databinding.FragmentItemDetailBinding
-import com.example.callradar.placeholder.CallLogHelper
-import com.example.callradar.placeholder.CallLogHelper.getCallTypeDescription
+import com.example.callradar.calls.CallLogHelper
 
 /**
  * A fragment representing a single Item detail screen.
@@ -25,7 +25,7 @@ class ItemDetailFragment : Fragment() {
     /**
      * The call log entry this fragment is presenting.
      */
-    private var item: CallLogHelper.CallDetail? = null
+    private var item: CallDetail? = null
 
     private var itemDetailTextView: TextView? = null
     private var aboutNumbersTextView: TextView? = null
@@ -51,6 +51,7 @@ class ItemDetailFragment : Fragment() {
 
         // Инициализация данных CallLogHelper
         CallLogHelper.initializeItems(requireContext())
+
 
         arguments?.let {
             if (it.containsKey(ARG_ITEM_ID)) {

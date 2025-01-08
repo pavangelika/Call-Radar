@@ -314,7 +314,7 @@ class DatabaseHelper(private val appContext: Context) :
                         "Регион" to formattedRegion
                     )
                     result = formattedRegion
-                    Log.d("StartLog", "Result: $resultMap")
+                    Log.d("DatabaseLog", "Result: $resultMap")
                     return result
 
                 }

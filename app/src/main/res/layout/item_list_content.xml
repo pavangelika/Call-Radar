@@ -1,47 +1,50 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:id="@+id/label"
-    >
+    android:padding="12dp">
 
-    <TextView
-        android:id="@+id/id_text"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_weight="4"
-        android:text="icon"
-        android:textAppearance="?attr/textAppearanceListItem"
-        android:layout_marginTop="8dp"
-        android:layout_marginLeft="1dp"
-        android:layout_marginBottom="8dp"/>
 
+    <!-- Иконка типа вызова -->
     <TextView
-        android:id="@+id/content"
-        android:text="89324271011"
-        android:layout_weight="2"
-        android:layout_width="match_parent"
+        android:id="@+id/call_type_icon"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textAppearance="?attr/textAppearanceListItem"
-        android:layout_marginTop="8dp"
-        android:layout_marginLeft="1dp"
-        android:layout_marginBottom="8dp" />
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="18dp"
+        android:text="2" />
 
+    <!-- Имя контакта или номер телефона -->
     <TextView
-        android:id="@+id/date"
-        android:layout_width="match_parent"
+        android:id="@+id/contact_name_or_number"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="1dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
-        android:layout_marginRight="8dp"
-        android:layout_weight="3"
-        android:text="20.12.2014"
-        android:textAppearance="?attr/textAppearanceListItem"
+        android:text="+79324271011"
+        android:textSize="18sp"
+        android:textColor="@color/white"
+        android:layout_toEndOf="@id/call_type_icon"
+        android:layout_alignParentTop="true" />
+
+    <!-- Источник вызова -->
+    <TextView
+        android:id="@+id/call_source"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Telegram-аудио"
+        android:textSize="13sp"
+        android:layout_toEndOf="@id/call_type_icon"
+        android:layout_below="@id/contact_name_or_number"
+        android:layout_marginTop="4dp" />
+
+    <!-- Дата вызова -->
+    <TextView
+        android:id="@+id/call_date"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
+        android:text="29.12.2024"
         android:textSize="14sp" />
 
 
-
-</LinearLayout>
-
+</RelativeLayout>

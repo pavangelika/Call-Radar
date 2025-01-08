@@ -11,6 +11,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" /> <!-- для запуска ForegroundService -->
     <uses-permission android:name="android.permission.WAKE_LOCK" /> <!-- для просыпания экрана -->
     <uses-permission android:name="android.permission.NOTIFICATION_POLICY_ACCESS" />
+    <uses-permission android:name="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" /> <!-- чтение уведомлений других приложений -->
+    <uses-permission android:name="android.permission.WRITE_CALL_LOG" /> <!-- запись в журнал звонков -->
+    <uses-permission android:name="android.permission.INTERNET"/> <!-- разрешение на доступ к интернету -->
 
 
     <application
@@ -23,20 +26,47 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MaterialComponents.DayNight"
         tools:targetApi="31">
+
+        <!-- Главная активность -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />  <!--Окно запускается первым -->
+                <category android:name="android.intent.category.LAUNCHER" />  <!--Отображение в списке приложений на устройстве -->
+                <action android:name="android.intent.action.DIAL" /> <!--позволяет приложению открывать экран dialer для набора номера телефона -->
+                <action android:name="android.intent.action.VIEW" /> <!--приложение может просматривать или открывать различные виды данны -->
+                <category android:name="android.intent.category.DEFAULT" /> <!-- -->
+                <category android:name="android.intent.category.BROWSABLE" /> <!--позволяет приложению обрабатывать интенты, которые могут быть запущены из браузера -->
+                <data android:scheme="tel" /> <!-- приложение может обрабатывать URL с префиксом tel://, который используется для телефонных звонков -->
+            </intent-filter>
+        </activity>
+
+        <!-- Вспомогательная активность -->
         <activity
             android:name=".ItemDetailHostActivity"
             android:exported="false"
             android:label="@string/title_activity_item_detail_host"
             android:resizeableActivity="true"
             tools:targetApi="24" />
-        <activity
-            android:name=".MainActivity"
-            android:exported="true">
+
+        <!-- Foreground Service -->
+        <service
+            android:name=".calls.CallLogForegroundService"
+            android:exported="false"
+            android:permission="android.permission.FOREGROUND_SERVICE" />
+
+        <!-- Listener уведомлений -->
+        <service
+            android:name=".CallNotificationListener"
+            android:label="Call Notification Listener"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="false">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" /> <!-- запустится первой -->
-                <category android:name="android.intent.category.LAUNCHER" /> <!-- приложение будет отображено в общем списке приложений Android -->
+                <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
-        </activity>
+        </service>
+
     </application>
 
 </manifest>

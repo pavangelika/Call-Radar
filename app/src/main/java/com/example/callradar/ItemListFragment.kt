@@ -2,7 +2,6 @@ package com.example.callradar
 
 import DatabaseHelper
 import android.content.Context
-//import com.example.callradar.placeholder.DatabaseHelper
 import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
@@ -17,19 +16,10 @@ import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import com.example.callradar.databinding.FragmentItemListBinding
 import com.example.callradar.databinding.ItemListContentBinding
-import com.example.callradar.placeholder.CallLogHelper
+import com.example.callradar.calls.CallLogHelper
+import com.example.callradar.calls.GroupedCallLog
 
 
-/**
- * A Fragment representing a list of Pings. This fragment
- * has different presentations for handset and larger screen devices. On
- * handsets, the fragment presents a list of items, which when touched,
- * lead to a {@link ItemDetailFragment} representing
- * item details. On larger screens, the Navigation controller presents the list of items and
- * item details side-by-side using two vertical panes.
- */
-
-// Класс фрагмента, отображающего список элементов
 class ItemListFragment : Fragment() {
 
     /**
@@ -59,11 +49,9 @@ class ItemListFragment : Fragment() {
         }
 
     private var _binding: FragmentItemListBinding? = null
-
-
-    // Ленивая инициализация binding, доступна только между `onCreateView` и `onDestroyView`
     private val binding get() = _binding!!
     private lateinit var helper: DatabaseHelper
+    private lateinit var callLogsAdapter: SimpleItemRecyclerViewAdapter
 
     // Метод для создания представления фрагмента
     override fun onCreateView(
@@ -71,15 +59,17 @@ class ItemListFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         Log.d("StartLog", "Fragment onCreateView")
-        // Инфлейтинг макета фрагмента через ViewBinding
         _binding = FragmentItemListBinding.inflate(inflater, container, false)
-        return binding.root   // Инфлейт XML разметки для фрагмента
+        return binding.root
 
     }
 
     // Метод для инициализации представления фрагмента
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        Log.d("StartLog", "Fragment onViewCreated")
+
         // Leaving this not using view binding as it relies on if the view is visible the current
         // layout configuration (layout, layout-sw600dp)
         // Проверяем, есть ли контейнер для деталей элементов (для больших экранов)
@@ -90,36 +80,55 @@ class ItemListFragment : Fragment() {
 
         // Инициализация базы данных
         helper = DatabaseHelper(requireContext())
-        val db = helper.readableDatabase
 
         // Настраиваем RecyclerView
         val recyclerView: RecyclerView = binding.itemList
-        setupRecyclerView(recyclerView, itemDetailFragmentContainer) 
+        setupRecyclerView(recyclerView, itemDetailFragmentContainer)
+
+        // Запуск мониторинга звонков
+        CallLogHelper.startCallLogMonitoring(requireContext()) { updatedLogs ->
+            Log.d("CallLogFragment", "Обновленные данные о звонках: $updatedLogs")
+
+            if (updatedLogs.isEmpty()) {
+                Log.d("CallLogFragment", "Нет звонков в журнале.")
+            }
+            val groupedLogs = CallLogHelper.groupCallLogs(updatedLogs)
+            callLogsAdapter.updateData(groupedLogs)  // Обновление данных в RecyclerView
+        }
+
+
     }
 
+    // Метод для настройки RecyclerView
     private fun setupRecyclerView(
         recyclerView: RecyclerView,
         itemDetailFragmentContainer: View?
     ) {
         val callLogs = CallLogHelper.fetchCallLogs(requireContext()) // Получаем список звонков
-        val newcallLogs = CallLogHelper.groupCallLogs(callLogs) // Список звонков с группировкой по типу, номеру телефона (количеству звонков), дате
-        helper.copyDatabase()
-//        val search = helper.searchPhone("+79962240543")
-//        Log.d("searchPhone", "searchPhone $search")
-        
-        
-        recyclerView.adapter = SimpleItemRecyclerViewAdapter(requireContext(),
-            newcallLogs, itemDetailFragmentContainer, helper)
+        val groupedLogs = CallLogHelper.groupCallLogs(callLogs)  // Группировка звонков
+        helper.copyDatabase() // Подключение к базе данных
+
+        // Настройка адаптера с начальными данными
+        recyclerView.adapter = SimpleItemRecyclerViewAdapter(
+            requireContext(),
+            groupedLogs, itemDetailFragmentContainer, helper
+        )
 
     }
 
-
+    // Адаптер для отображения звонков
     class SimpleItemRecyclerViewAdapter(
         private val context: Context,
-        private val callLogs: List<CallLogHelper.GroupedCallLog>, // Список данных о звонках
+        private var callLogs: List<GroupedCallLog>, // Список данных о звонках
         private val itemDetailFragmentContainer: View?, // Контейнер для деталей элементов
         private val helper: DatabaseHelper
     ) : RecyclerView.Adapter<SimpleItemRecyclerViewAdapter.ViewHolder>() {
+
+        // Метод для обновления данных
+        fun updateData(newData: List<GroupedCallLog>) {
+            callLogs = newData
+            notifyDataSetChanged() // Уведомляем адаптер о том, что данные обновились
+        }
 
         // Создание нового ViewHolder для адаптера
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -128,26 +137,29 @@ class ItemListFragment : Fragment() {
             return ViewHolder(binding)
         }
 
-        // Привязка данных к ViewHolder
+        // Привязка данных к элементам View
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            Log.d("StartLog", "Fragment onBindViewHolder")   // ТУТУ
             val item = callLogs[position]
 //            Log.d("bundleLog", "callog $item")
             val search = helper.searchPhone(item.number)
             Log.d("numbersLog", "${item.number}")
 
-            holder.idView.text = item.type.toString() // Тип звонка
-            holder.contentView.text =  when {
-                item.contactName == "Неизвестный" -> "${item.number} ${item.callCount} $search"
-                else -> "${item.contactName} ${item.callCount}"}
+            holder.typeView.text = item.type.toString() // Тип звонка
+            holder.contactView.text = when {
+                item.contactName == "Неизвестный" -> "${item.number} ${item.callCount}"
+                else -> "${item.contactName} ${item.callCount}"
+            }
+            holder.placeView.text = when {
+                item.contactName == "Неизвестный" -> search
+                else -> item.accountApp
+            }
             holder.dateView.text = item.date
-
-
-
 
             with(holder.itemView) {
                 tag = item // Устанавливаем данные звонка в tag для передачи
                 setOnClickListener { itemView ->
-                    val item = itemView.tag as CallLogHelper.GroupedCallLog
+                    val item = itemView.tag as GroupedCallLog
                     Log.d("callLog", "callog $item")
 
                     val bundle = Bundle()
@@ -158,8 +170,9 @@ class ItemListFragment : Fragment() {
                     )
 
                     Log.d("bundleLog", "bundle $bundle")
-                    if (item.number == ItemDetailFragment.ARG_ITEM_ID){
-                        Log.d("bundleLog", "item for ${item.number} $item")}
+                    if (item.number == ItemDetailFragment.ARG_ITEM_ID) {
+                        Log.d("bundleLog", "item for ${item.number} $item")
+                    }
 
 
                     if (itemDetailFragmentContainer != null) {
@@ -226,21 +239,20 @@ class ItemListFragment : Fragment() {
 
         inner class ViewHolder(binding: ItemListContentBinding) :
             RecyclerView.ViewHolder(binding.root) {
-            val idView: TextView = binding.idText
-            val contentView: TextView = binding.content
-            val dateView: TextView = binding.date // Текстовое поле для даты
+            val typeView: TextView = binding.callTypeIcon
+            val contactView: TextView = binding.contactNameOrNumber
+            val placeView: TextView = binding.callSource
+            val dateView: TextView = binding.callDate
         }
-
 
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        Log.d("StartLog", "Fragment onDestroyView")
         _binding = null // Очистка ссылок на View
         helper.close()
     }
-
-
 
 
 }

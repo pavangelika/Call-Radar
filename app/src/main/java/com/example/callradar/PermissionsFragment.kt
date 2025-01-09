@@ -25,7 +25,6 @@ class PermissionsFragment : Fragment() {
     private var _binding: FragmentPermissionsBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var tvPrms: TextView
     private lateinit var permissionsLauncher: ActivityResultLauncher<Array<String>>
     private lateinit var overlayPermissionLauncher: ActivityResultLauncher<Intent>
 
@@ -51,7 +50,6 @@ class PermissionsFragment : Fragment() {
     ): View {
 //        Log.d("StartLog", "FragmentPermission - onCreateView")
         _binding = FragmentPermissionsBinding.inflate(inflater, container, false)
-        tvPrms = binding.tvPrms
         return binding.root
     }
 

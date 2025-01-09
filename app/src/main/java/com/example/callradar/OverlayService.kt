@@ -1,7 +1,6 @@
-//Сервис для отображения Overlay с номером телефона:
-
 package com.example.callradar
 
+import DatabaseHelper
 import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
@@ -16,20 +15,24 @@ import android.os.PowerManager
 import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
-import android.view.View
 import android.view.WindowManager
-import android.widget.TextView
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
 import android.telephony.PhoneStateListener
 import android.telephony.TelephonyManager
+import android.view.View
+import android.widget.TextView
+import com.example.callradar.databinding.OverlayLayoutBinding
 
+/** Сервис для отображения Overlay с номером телефона */
 class OverlayService : LifecycleService() {
 
     private lateinit var windowManager: WindowManager
-    private var overlayView: View? = null
     private lateinit var telephonyManager: TelephonyManager
+    private lateinit var helper: DatabaseHelper
+
+    private var overlayView: View? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -37,6 +40,9 @@ class OverlayService : LifecycleService() {
         telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
         telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE)
         startForegroundService()
+        helper = DatabaseHelper(this)
+        helper.copyDatabase() // Подключение к базе данных
+
     }
 
     override fun onDestroy() {
@@ -63,8 +69,10 @@ class OverlayService : LifecycleService() {
         val layoutInflater = LayoutInflater.from(this)
         overlayView = layoutInflater.inflate(R.layout.overlay_layout, null)
 
+        val info = helper.searchPhone(phoneNumber)
+
         val textView = overlayView!!.findViewById<TextView>(R.id.overlay_text)
-        textView.text = "Неизвестный номер: $phoneNumber"
+        textView.text = "$info"
 
         val layoutParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,

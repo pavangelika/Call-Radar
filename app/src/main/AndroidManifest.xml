@@ -34,12 +34,20 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />  <!--Окно запускается первым -->
                 <category android:name="android.intent.category.LAUNCHER" />  <!--Отображение в списке приложений на устройстве -->
+            </intent-filter>
+
+            <intent-filter>
                 <action android:name="android.intent.action.DIAL" /> <!--позволяет приложению открывать экран dialer для набора номера телефона -->
+                <data android:scheme="tel" />
+            </intent-filter>
+
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW" /> <!--приложение может просматривать или открывать различные виды данны -->
                 <category android:name="android.intent.category.DEFAULT" /> <!-- -->
                 <category android:name="android.intent.category.BROWSABLE" /> <!--позволяет приложению обрабатывать интенты, которые могут быть запущены из браузера -->
                 <data android:scheme="tel" /> <!-- приложение может обрабатывать URL с префиксом tel://, который используется для телефонных звонков -->
             </intent-filter>
+
         </activity>
 
         <!-- Вспомогательная активность -->
@@ -61,7 +69,7 @@
             android:name=".CallNotificationListener"
             android:label="Call Notification Listener"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
-            android:exported="false">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>

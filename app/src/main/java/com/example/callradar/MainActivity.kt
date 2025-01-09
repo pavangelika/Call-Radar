@@ -3,16 +3,12 @@ package com.example.callradar
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -20,23 +16,15 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.example.callradar.calls.CallLogForegroundService
-import com.example.callradar.calls.CallLogHelper
+import com.example.callradar.calls.GroupedCallLog
 import com.example.callradar.databinding.ActivityMainBinding
-import com.google.android.material.snackbar.Snackbar
 import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private lateinit var permissionsLauncher: ActivityResultLauncher<Array<String>>
-    private lateinit var overlayPermissionLauncher: ActivityResultLauncher<Intent>
 
-    private val requiredPermissions = arrayOf(
-        Manifest.permission.READ_CALL_LOG,
-        Manifest.permission.READ_PHONE_STATE,
-        Manifest.permission.READ_CONTACTS,
-        Manifest.permission.CALL_PHONE,
-        Manifest.permission.WRITE_CALL_LOG)
+    private val requiredPermissions = PermissionsFragment.requiredPermissions
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,6 +43,7 @@ class MainActivity : AppCompatActivity() {
             "EmailWorker",  // Уникальное имя задачи
             ExistingPeriodicWorkPolicy.KEEP,  // Сохранить существующую задачу, если она уже запланирована
             emailWorkRequest
+
         )
 
         enableEdgeToEdge()
@@ -62,129 +51,83 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         Log.d("StartLog", "___________START______________")
         Log.d("StartLog", ".... Овца родилась... - CREATE")
-        setupPermissionLaunchers()
+
     }
 
     override fun onStart() {
         super.onStart()
         Log.d("StartLog", ".... Овца запущена.... - START")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-            binding.tvPrms.text = "Для получения информации о звонках разрешите наложение поверх других окон"
-            showSnackback{openOverlaySettings()}
-        } else if (!isNotificationAccessGranted()){
-            binding.tvPrms.text = "Для вывода звонков из всех приложений предоставьте доступ к уведомлениям"
-            showSnackback{openNotificationSettings()}
-        }else {
-            binding.tvPrms.text = "Для получения информации о звонках необходимо разрешить:"
-            checkAndRequestPermissions()
-        }
+        chooseFragment()
+
     }
 
     override fun onResume() {
         super.onResume()
         Log.d("StartLog", ".... Поймай овцу..... - RESUME")
-        verifyPermissions()
+
     }
 
-    /** overlayPermissionLauncher и checkAndRequestPermissions() */
-    private fun setupPermissionLaunchers() {
-        overlayPermissionLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-                binding.tvPrms.text = "Для получения информации о звонках разрешите наложение поверх других окон"
-                showSnackback{openOverlaySettings()}
-            } else if (!isNotificationAccessGranted()) {
-                binding.tvPrms.text = "Для вывода звонков из всех приложений предоставьте доступ к уведомлениям: CallRadar - Call Notification Listener"
-                showSnackback{openNotificationSettings()}
-            } else {
-                binding.tvPrms.text = "Для получения информации о звонках необходимо разрешить:"
-                checkAndRequestPermissions()
-            }
-        }
-
-        permissionsLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
-            handlePermissionsResult(permissions)
-        }
+    override fun onPause() {
+        super.onPause()
+        Log.d("StartLog", ".... Овца замерла..... - PAUSE")
     }
 
-    /** Финальная проверка предоставленных разрешений */
-    private fun verifyPermissions() {
-        val missingPermissions = requiredPermissions.filter {
-            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
-        }
-        if (missingPermissions.isEmpty()) {
-            binding.tvPrms.text = "Разрешения предоставлены"
-            Log.d("StartLog", "Разрешения предоставлены")
-            navigateToCallLog()
-
-            // Запуск Foreground Service
-            val serviceIntent = Intent(this, CallLogForegroundService::class.java)
-            startForegroundService(serviceIntent)
-
-        } else {
-            Log.d("StartLog", "Missing permissions: $missingPermissions - НЕ РАЗРЕШЕНО")
-        }
+    override fun onStop() {
+        super.onStop()
+        Log.d("StartLog", ".... Овца встала..... - STOP")
     }
 
-    private fun checkAndRequestPermissions() {
-        val missingPermissions = requiredPermissions.filter {
-            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
-        }
-        if (missingPermissions.isNotEmpty()) {
-            permissionsLauncher.launch(missingPermissions.toTypedArray())
-        } else {
-            binding.tvPrms.text = "Разрешения предоставлены"
-        }
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d("StartLog", ".... Овца умерла..... - DESTROY")
     }
 
-    private fun handlePermissionsResult(permissions: Map<String, Boolean>) {
-        permissions.forEach { (permission, isGranted) ->
-            when {
-                isGranted -> Log.d("StartLog", "$permission - РАЗРЕШЕНО")
-                ActivityCompat.shouldShowRequestPermissionRationale(this, permission) -> {
-                    Log.d("StartLog", "$permission - ОТКЛОНЕНО ")
-                    checkAndRequestPermissions()
-                }
-                else -> {
-                    Log.d("StartLog", "$permission - ОТКАЗАНО НАВСЕГДА")
-                    binding.tvPrms.text =
-                        "Для корректной работы перейдите на вкладу 'Права' и предоставьте необходимые разрешения:"
-                    showSnackback{openAppSettings()}
-                }
-            }
-        }
-    }
 
-    private fun showSnackback(action: () -> Unit){
-        Snackbar.make(binding.root, "Нажмите, чтобы перейти в настройки", Snackbar.LENGTH_INDEFINITE)
-            .setAction("Настройки") { action() }
-            .show()
-    }
 
     private fun isNotificationAccessGranted(): Boolean {
-        val enabledListeners = Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
+        val enabledListeners =
+            Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
         return enabledListeners?.contains(packageName) == true
     }
 
-    /** Показ системного окна для разрешения наложения поверх других приложений */
-    private fun openOverlaySettings() {
-        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
-        overlayPermissionLauncher.launch(intent)
-    }
-
-    /** Диалоговое окно для запроса разрешений у пользователя */
-    private fun openAppSettings() {
-        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-            data = Uri.fromParts("package", packageName, null)
+    private fun chooseFragment() {
+        val missingPermissions = requiredPermissions.filter {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }
-        startActivity(intent)
-    }
-    /** Показ системного окна для разрешения чтения уведомлений всех приложений */
-    private fun openNotificationSettings(){
-        val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-        startActivity(intent)
+        if (!(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this) || !isNotificationAccessGranted() || missingPermissions.isNotEmpty())) {
+            Log.d("StartLog", "Разрешения есть")
+
+            startForegroundService()
+
+            navigateToCallLog()
+        } else {
+            Log.d("StartLog", "Требуются разрешения")
+            openPermissionsFragment()
+        }
     }
 
     private fun navigateToCallLog() {
-        startActivity(Intent(this, ItemDetailHostActivity::class.java))
+        val intent = Intent(this, ItemDetailHostActivity::class.java)
+        startActivity(intent)
     }
+
+    private fun openPermissionsFragment() {
+        val permissionsFragment = PermissionsFragment()
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, permissionsFragment)
+            .addToBackStack(null)
+            .commit()
+    }
+
+    /** Запуск Foreground Service */
+    private fun startForegroundService(){
+        val serviceIntent = Intent(this, CallLogForegroundService::class.java)
+        startService(serviceIntent)
+    }
+
+
+
+
+
+
 }

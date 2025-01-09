@@ -90,7 +90,7 @@ class ItemListFragment : Fragment() {
             Log.d("CallLogFragment", "Обновленные данные о звонках: $updatedLogs")
 
             if (updatedLogs.isEmpty()) {
-                Log.d("CallLogFragment", "Нет звонков в журнале.")
+                Log.d("CallLogFragment", "Нет новых звонков в журнале.")
             }
             val groupedLogs = CallLogHelper.groupCallLogs(updatedLogs)
             callLogsAdapter.updateData(groupedLogs)  // Обновление данных в RecyclerView
@@ -139,7 +139,6 @@ class ItemListFragment : Fragment() {
 
         // Привязка данных к элементам View
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            Log.d("StartLog", "Fragment onBindViewHolder")   // ТУТУ
             val item = callLogs[position]
 //            Log.d("bundleLog", "callog $item")
             val search = helper.searchPhone(item.number)

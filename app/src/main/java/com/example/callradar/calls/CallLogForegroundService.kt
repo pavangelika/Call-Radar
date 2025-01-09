@@ -36,7 +36,7 @@ class CallLogForegroundService : Service() {
         startForeground(FOREGROUND_ID, notification)
 
         // Запускаем отслеживание звонков
-//        startCallLogUpdate()
+        startCallLogUpdate()
 
     }
 
@@ -52,19 +52,22 @@ class CallLogForegroundService : Service() {
         }
     }
 
-//    private fun startCallLogUpdate() {
-//        val handler = Handler(Looper.getMainLooper())
-//        val onCallLogChanged: () -> Unit = {
-//            Log.d("CallLogForegroundService", "Журнал звонков изменился")
-//        }
-//
-//        val callLogUpdate = CallLogUpdate(applicationContext, handler, onCallLogChanged)
-//        contentResolver.registerContentObserver(
-//            CallLog.Calls.CONTENT_URI,
-//            true,
-//            callLogUpdate
-//        )
-//    }
+    private fun startCallLogUpdate() {
+        val handler = Handler(Looper.getMainLooper())
+        val onCallLogChanged: () -> Unit = {
+            Log.d("CallLogForegroundService", "Журнал звонков изменился")
+        }
+
+        val callLogUpdate = CallLogUpdate(applicationContext, handler, onCallLogChanged)
+        contentResolver.registerContentObserver(
+            CallLog.Calls.CONTENT_URI,
+            true,
+            callLogUpdate
+        )
+    }
+
+
+
 
     override fun onBind(intent: Intent?): IBinder? = null
 

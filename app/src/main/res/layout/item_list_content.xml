@@ -23,7 +23,7 @@
         android:textSize="18sp"
         android:textColor="@color/white"
         android:layout_toEndOf="@id/call_type_icon"
-        android:layout_alignParentTop="true" />
+        android:layout_alignParentTop="true"/>
 
     <!-- Источник вызова -->
     <TextView

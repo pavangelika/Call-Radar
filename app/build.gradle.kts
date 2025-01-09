@@ -52,6 +52,9 @@ dependencies {
     implementation("com.sun.mail:android-activation:1.6.0")
     implementation("androidx.work:work-runtime-ktx:2.8.1")
 
+    implementation ("androidx.recyclerview:recyclerview:1.3.1")
+    implementation ("androidx.lifecycle:lifecycle-service:2.8.7")
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)

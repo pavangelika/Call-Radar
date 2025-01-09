@@ -75,6 +75,21 @@
             </intent-filter>
         </service>
 
+        <!-- Информация о входящих во время звонка -->
+        <service
+            android:name=".OverlayService"
+            android:exported="true"
+            android:permission="android.permission.FOREGROUND_SERVICE" />
+
+        <!-- Ресивер для отслеживания состояния телефона -->
+        <receiver
+            android:name=".CallReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.PHONE_STATE" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>

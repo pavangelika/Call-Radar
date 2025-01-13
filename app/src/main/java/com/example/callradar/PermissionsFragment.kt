@@ -1,5 +1,6 @@
 package com.example.callradar
 
+import DatabaseHelper
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -25,13 +26,19 @@ class PermissionsFragment : Fragment() {
     private var _binding: FragmentPermissionsBinding? = null
     private val binding get() = _binding!!
 
+
     private lateinit var permissionsLauncher: ActivityResultLauncher<Array<String>>
     private lateinit var overlayPermissionLauncher: ActivityResultLauncher<Intent>
 
-    private val text_prms1 = "Для получения информации о звонках разрешите наложение поверх других окон"
-    private val text_prms2 = "Для вывода звонков из всех приложений предоставьте доступ к уведомлениям: CallRadar - Call Notification Listener"
+    private lateinit var helper: DatabaseHelper
+
+    private val text_prms1 =
+        "Для получения информации о звонках разрешите наложение поверх других окон"
+    private val text_prms2 =
+        "Для вывода звонков из всех приложений предоставьте доступ к уведомлениям: CallRadar - Call Notification Listener"
     private val text_prms3 = "Для получения информации о звонках необходимо разрешить:"
-    private val text_prms4 = "Для корректной работы перейдите на вкладку 'Права' и предоставьте необходимые разрешения:"
+    private val text_prms4 =
+        "Для корректной работы перейдите на вкладку 'Права' и предоставьте необходимые разрешения:"
 
 
     companion object {
@@ -62,34 +69,37 @@ class PermissionsFragment : Fragment() {
     }
 
     private fun checkOnStart() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(requireContext())) {
-                binding.tvPrms.text = text_prms1
-                showSnackbar { openOverlaySettings() }
-            }
-        else if (!isNotificationAccessGranted()){
-                binding.tvPrms.text = text_prms2
-                showSnackbar { openNotificationSettings() }
-            }
-        else {
-                binding.tvPrms.text = text_prms3
-                checkAndRequestPermissions()
-                Log.d("StartLog", "запрос прав у пользователя 1")
-            }
-
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(
+                requireContext()
+            )
+        ) {
+            binding.tvPrms.text = text_prms1
+            showSnackbar { openOverlaySettings() }
+        } else if (!isNotificationAccessGranted()) {
+            binding.tvPrms.text = text_prms2
+            showSnackbar { openNotificationSettings() }
+        } else {
+            binding.tvPrms.text = text_prms3
+            checkAndRequestPermissions()
+            Log.d("StartLog", "запрос прав у пользователя 1")
         }
+
+    }
 
 
     /** overlayPermissionLauncher и checkAndRequestPermissions() */
     private fun setupPermissionLaunchers() {
         overlayPermissionLauncher =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(requireContext())) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(
+                        requireContext()
+                    )
+                ) {
                     binding.tvPrms.text = text_prms1
-                    showSnackbar {openOverlaySettings()}
+                    showSnackbar { openOverlaySettings() }
                     Log.d("StartLog", "Запрошено разрешение на наложение поверх других окон")
-                }
-                else if (!isNotificationAccessGranted()) {
-                    binding.tvPrms.text =text_prms2
+                } else if (!isNotificationAccessGranted()) {
+                    binding.tvPrms.text = text_prms2
                     showSnackbar { openNotificationSettings() }
                     Log.d("StartLog", "Запрошено разрешение на Call Notification")
                 } else {
@@ -109,7 +119,10 @@ class PermissionsFragment : Fragment() {
 
     private fun checkAndRequestPermissions() {
         val missingPermissions = requiredPermissions.filter {
-            ContextCompat.checkSelfPermission(requireContext(), it) != PackageManager.PERMISSION_GRANTED
+            ContextCompat.checkSelfPermission(
+                requireContext(),
+                it
+            ) != PackageManager.PERMISSION_GRANTED
         }
         if (missingPermissions.isNotEmpty()) {
             permissionsLauncher.launch(missingPermissions.toTypedArray())
@@ -126,13 +139,17 @@ class PermissionsFragment : Fragment() {
             navigateToCallLog()
         } else {
             deniedPermissions.forEach { permission ->
-                if (ActivityCompat.shouldShowRequestPermissionRationale(requireActivity(), permission)) {
+                if (ActivityCompat.shouldShowRequestPermissionRationale(
+                        requireActivity(),
+                        permission
+                    )
+                ) {
                     Log.d("StartLog", "$permission - ОТКЛОНЕНО")
                     checkAndRequestPermissions()
                     Log.d("StartLog", "запрос прав у пользователя 3")
                 } else {
                     Log.d("StartLog", "$permission - ОТКАЗАНО НАВСЕГДА")
-                    binding.tvPrms.text =text_prms4
+                    binding.tvPrms.text = text_prms4
                     showSnackbar { openAppSettings() }
                 }
             }
@@ -151,18 +168,25 @@ class PermissionsFragment : Fragment() {
 
     private fun isNotificationAccessGranted(): Boolean {
         val enabledListeners =
-            Settings.Secure.getString(requireContext().contentResolver, "enabled_notification_listeners")
-        return enabledListeners?.split(":")?.any { it.contains(requireContext().packageName) } == true
+            Settings.Secure.getString(
+                requireContext().contentResolver,
+                "enabled_notification_listeners"
+            )
+        return enabledListeners?.split(":")
+            ?.any { it.contains(requireContext().packageName) } == true
     }
 
-        /** Показ системного окна для разрешения наложения поверх других приложений */
+    /** Показ системного окна для разрешения наложения поверх других приложений */
     private fun openOverlaySettings() {
         val intent =
-            Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${requireContext().packageName}"))
+            Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:${requireContext().packageName}")
+            )
         overlayPermissionLauncher.launch(intent)
     }
 
-        /** Диалоговое окно для запроса разрешений у пользователя */
+    /** Диалоговое окно для запроса разрешений у пользователя */
     private fun openAppSettings() {
         val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
             data = Uri.fromParts("package", requireContext().packageName, null)
@@ -170,13 +194,17 @@ class PermissionsFragment : Fragment() {
         startActivity(intent)
     }
 
-        /** Показ системного окна для разрешения чтения уведомлений всех приложений */
+    /** Показ системного окна для разрешения чтения уведомлений всех приложений */
     private fun openNotificationSettings() {
         val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
         startActivity(intent)
     }
 
     private fun navigateToCallLog() {
+        // Инициализация базы данных
+        helper = DatabaseHelper(requireContext())
+        helper.copyDatabase() // Подключение к базе данных
+
         val intent = Intent(requireContext(), ItemDetailHostActivity::class.java)
         startActivity(intent)
     }

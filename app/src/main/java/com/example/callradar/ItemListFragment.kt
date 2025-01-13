@@ -12,12 +12,17 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.view.ViewCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import com.example.callradar.databinding.FragmentItemListBinding
 import com.example.callradar.databinding.ItemListContentBinding
 import com.example.callradar.calls.CallLogHelper
 import com.example.callradar.calls.GroupedCallLog
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 class ItemListFragment : Fragment() {
@@ -78,7 +83,7 @@ class ItemListFragment : Fragment() {
         // Добавление обработчика для глобальных событий клавиатуры
         ViewCompat.addOnUnhandledKeyEventListener(view, unhandledKeyEventListenerCompat)
 
-        // Инициализация базы данных
+//        // Инициализация базы данных
         helper = DatabaseHelper(requireContext())
 
         // Настраиваем RecyclerView
@@ -86,14 +91,28 @@ class ItemListFragment : Fragment() {
         setupRecyclerView(recyclerView, itemDetailFragmentContainer)
 
         // Запуск мониторинга звонков
-        CallLogHelper.startCallLogMonitoring(requireContext()) { updatedLogs ->
-            Log.d("CallLogFragment", "Обновленные данные о звонках: $updatedLogs")
+//        CallLogHelper.startCallLogMonitoring(requireContext()) { updatedLogs ->
+//            Log.d("CallLogFragment", "Обновленные данные о звонках: $updatedLogs")
+//
+//            if (updatedLogs.isEmpty()) {
+//                Log.d("CallLogFragment", "Нет новых звонков в журнале.")
+//            }
+//            val groupedLogs = CallLogHelper.groupCallLogs(updatedLogs)
+//            callLogsAdapter.updateData(groupedLogs)  // Обновление данных в RecyclerView
+//        }
 
-            if (updatedLogs.isEmpty()) {
-                Log.d("CallLogFragment", "Нет новых звонков в журнале.")
+        CallLogHelper.startCallLogMonitoring(requireContext()) { updatedLogs ->
+            CoroutineScope(Dispatchers.Main).launch {
+                try {
+                    val groupedLogs = withContext(Dispatchers.IO) {
+                        CallLogHelper.groupCallLogs(updatedLogs)
+                    }
+
+                    callLogsAdapter.updateData(groupedLogs)
+                } catch (e: Exception) {
+                    Log.e("CallLogMonitoring", "Ошибка обработки обновленных данных", e)
+                }
             }
-            val groupedLogs = CallLogHelper.groupCallLogs(updatedLogs)
-            callLogsAdapter.updateData(groupedLogs)  // Обновление данных в RecyclerView
         }
 
 
@@ -106,13 +125,14 @@ class ItemListFragment : Fragment() {
     ) {
         val callLogs = CallLogHelper.fetchCallLogs(requireContext()) // Получаем список звонков
         val groupedLogs = CallLogHelper.groupCallLogs(callLogs)  // Группировка звонков
-        helper.copyDatabase() // Подключение к базе данных
 
         // Настройка адаптера с начальными данными
-        recyclerView.adapter = SimpleItemRecyclerViewAdapter(
+        callLogsAdapter = SimpleItemRecyclerViewAdapter(
             requireContext(),
             groupedLogs, itemDetailFragmentContainer, helper
         )
+
+        recyclerView.adapter = callLogsAdapter
 
     }
 

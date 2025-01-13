@@ -15,6 +15,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        vectorDrawables.useSupportLibrary = true
 
     }
 
@@ -44,6 +45,9 @@ android {
 }
 
 dependencies {
+    implementation ("androidx.recyclerview:recyclerview:1.3.1")
+    implementation ("androidx.lifecycle:lifecycle-service:2.8.7")
+    implementation("com.android.support:appcompat-v7:23.2.0")
     // Для работы с разрешениями
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
@@ -51,9 +55,6 @@ dependencies {
     implementation("com.sun.mail:android-mail:1.6.0")
     implementation("com.sun.mail:android-activation:1.6.0")
     implementation("androidx.work:work-runtime-ktx:2.8.1")
-
-    implementation ("androidx.recyclerview:recyclerview:1.3.1")
-    implementation ("androidx.lifecycle:lifecycle-service:2.8.7")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

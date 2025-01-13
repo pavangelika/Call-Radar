@@ -31,6 +31,7 @@ class OverlayService : LifecycleService() {
     private lateinit var windowManager: WindowManager
     private lateinit var telephonyManager: TelephonyManager
     private lateinit var helper: DatabaseHelper
+    private var callType: String? = null
 
     private var overlayView: View? = null
 
@@ -70,9 +71,20 @@ class OverlayService : LifecycleService() {
         overlayView = layoutInflater.inflate(R.layout.overlay_layout, null)
 
         val info = helper.searchPhone(phoneNumber)
+        if (info.contains("г.") && !info.contains("область", ignoreCase = true )){
+            callType = "Звонок с городского номера"
+        } else{
+            callType = "Звонок с мобильного номера"
+        }
 
-        val textView = overlayView!!.findViewById<TextView>(R.id.overlay_text)
-        textView.text = "$info"
+        val overlayText= overlayView!!.findViewById<TextView>(R.id.overlay_text)
+        overlayText.text = " $info"
+
+        val callTypeText = overlayView!!.findViewById<TextView>(R.id.call_type)
+        callTypeText.text = " $callType"
+
+
+
 
         val layoutParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
@@ -153,8 +165,8 @@ class OverlayService : LifecycleService() {
         intent?.getStringExtra("phone_number")?.let { phoneNumber ->
             Log.d("StartLog", "Получен номер: $phoneNumber")
 //            showOverlay(phoneNumber)
-            // Задержка 0.3 секунд перед показом overlay
-            showOverlayWithDelay(phoneNumber, 300L)
+            // Задержка 0.2 секунд перед показом overlay
+            showOverlayWithDelay(phoneNumber, 200L)
         }
         return START_STICKY
     }

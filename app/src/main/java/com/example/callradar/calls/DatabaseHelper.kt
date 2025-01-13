@@ -306,6 +306,9 @@ class DatabaseHelper(private val appContext: Context) :
                     if (formattedRegion.contains("*")) {
                         formattedRegion = formattedRegion.split("*")[0] // Оставляем только часть до символа "*"
                     }
+                    if (formattedRegion.contains("область" )) {
+                        formattedRegion = formattedRegion.replace("область", "обл.")
+                    }
 
                     val resultMap = mapOf(
                         "Телефон" to phone,

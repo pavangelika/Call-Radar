@@ -91,16 +91,6 @@ class ItemListFragment : Fragment() {
         setupRecyclerView(recyclerView, itemDetailFragmentContainer)
 
         // Запуск мониторинга звонков
-//        CallLogHelper.startCallLogMonitoring(requireContext()) { updatedLogs ->
-//            Log.d("CallLogFragment", "Обновленные данные о звонках: $updatedLogs")
-//
-//            if (updatedLogs.isEmpty()) {
-//                Log.d("CallLogFragment", "Нет новых звонков в журнале.")
-//            }
-//            val groupedLogs = CallLogHelper.groupCallLogs(updatedLogs)
-//            callLogsAdapter.updateData(groupedLogs)  // Обновление данных в RecyclerView
-//        }
-
         CallLogHelper.startCallLogMonitoring(requireContext()) { updatedLogs ->
             CoroutineScope(Dispatchers.Main).launch {
                 try {
@@ -203,53 +193,6 @@ class ItemListFragment : Fragment() {
                     }
                 }
 
-
-//                // Обработчик для правого клика (на мыши/тачпаде)
-//                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-//                    /**
-//                     * Context click listener to handle Right click events
-//                     * from mice and trackpad input to provide a more native
-//                     * experience on larger screen devices
-//                     */
-//                    setOnContextClickListener { v ->
-//                        val item = v.tag as PlaceholderContent.PlaceholderItem
-//                        Toast.makeText(
-//                            v.context,
-//                            "Context click of item " + item.id,
-//                            Toast.LENGTH_LONG
-//                        ).show()
-//                        true
-//                    }
-//                }
-
-                // Обработчик долгого нажатия для начала перетаскивания элемента
-//                setOnLongClickListener { v ->
-//                    // Setting the item id as the clip data so that the drop target is able to
-//                    // identify the id of the content
-//                    val clipItem = ClipData.Item(item.id)
-//                    val dragData = ClipData(
-//                        v.tag as? CharSequence,
-//                        arrayOf(ClipDescription.MIMETYPE_TEXT_PLAIN),
-//                        clipItem
-//                    )
-//
-//                    if (Build.VERSION.SDK_INT >= 24) {
-//                        v.startDragAndDrop(
-//                            dragData,
-//                            View.DragShadowBuilder(v),
-//                            null,
-//                            0
-//                        )
-//                    } else {
-//                        v.startDrag(
-//                            dragData,
-//                            View.DragShadowBuilder(v),
-//                            null,
-//                            0
-//                        )
-//                    }
-//                }
-//
             }
         }
 

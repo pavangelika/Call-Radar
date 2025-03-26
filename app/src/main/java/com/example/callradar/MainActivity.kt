@@ -31,21 +31,21 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         // Настройка WorkManager для выполнения задачи раз в неделю
-        val emailWorkRequest = PeriodicWorkRequestBuilder<EmailWorker>(1, TimeUnit.DAYS)
-            .setConstraints(
-                Constraints.Builder()
-                    .setRequiredNetworkType(NetworkType.CONNECTED) // Задача выполняется только при наличии интернета
-                    .setRequiresCharging(false) // Не обязательно на зарядке
-                    .build()
-            )
-            .build()
+//        val emailWorkRequest = PeriodicWorkRequestBuilder<EmailWorker>(1, TimeUnit.DAYS)
+//            .setConstraints(
+//                Constraints.Builder()
+//                    .setRequiredNetworkType(NetworkType.CONNECTED) // Задача выполняется только при наличии интернета
+//                    .setRequiresCharging(false) // Не обязательно на зарядке
+//                    .build()
+//            )
+//            .build()
 
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "EmailWorker",  // Уникальное имя задачи
-            ExistingPeriodicWorkPolicy.KEEP,  // Сохранить существующую задачу, если она уже запланирована
-            emailWorkRequest
-
-        )
+//        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+//            "EmailWorker",  // Уникальное имя задачи
+//            ExistingPeriodicWorkPolicy.KEEP,  // Сохранить существующую задачу, если она уже запланирована
+//            emailWorkRequest
+//
+//        )
 
         enableEdgeToEdge()
         binding = ActivityMainBinding.inflate(layoutInflater)

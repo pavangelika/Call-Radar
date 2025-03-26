@@ -182,12 +182,19 @@ class ItemListFragment : Fragment() {
                 )
             }
 
+            // Новый код начинается здесь:
+// Форматирование номера
 
-
-            holder.contactView.text = when {
-                item.contactName == "Неизвестный" -> "${item.number} ${item.callCount}"
-                else -> "${item.contactName} ${item.callCount}"
+            val isCity = search?.startsWith("г.") == true
+            if (item.contactName == "Неизвестный") {
+                holder.contactView.text = formatPhoneNumber(item.number, isCity)
+                holder.placeView.text = if (isCity) search else item.accountApp ?: ""
+            } else {
+                holder.contactView.text = "${item.contactName} ${item.callCount}"
+                holder.placeView.text = item.accountApp
             }
+            // Новый код заканчивается здесь
+
             holder.placeView.text = when {
                 item.contactName == "Неизвестный" -> search
                 else -> item.accountApp
@@ -235,6 +242,30 @@ class ItemListFragment : Fragment() {
             val contactView: TextView = binding.contactNameOrNumber
             val placeView: TextView = binding.callSource
             val dateView: TextView = binding.callDate
+        }
+
+        private fun formatPhoneNumber(phoneNumber: String, isCity: Boolean): String {
+            return try {
+                val cleanNumber = phoneNumber.replace("[^0-9]".toRegex(), "")
+                when {
+                    // Для всех городских номеров (начинающихся на 8 или +7)
+                    isCity && (cleanNumber.startsWith("8") || cleanNumber.startsWith("7")) && cleanNumber.length == 11 -> {
+                        val regionCode = cleanNumber.substring(1, 4)
+                        val mainNumber = cleanNumber.substring(4)
+                        "${cleanNumber[0]} ($regionCode${cleanNumber[4]}) ${mainNumber.substring(1, 3)}-${mainNumber.substring(3, 5)}-${mainNumber.substring(5)}"
+                    }
+                    // Для обычных мобильных номеров
+                    cleanNumber.startsWith("8") && cleanNumber.length == 11 -> {
+                        "8 (${cleanNumber.substring(1, 4)}) ${cleanNumber.substring(4, 7)}-${cleanNumber.substring(7, 9)}-${cleanNumber.substring(9)}"
+                    }
+                    cleanNumber.startsWith("7") && cleanNumber.length == 11 -> {
+                        "+7 (${cleanNumber.substring(1, 4)}) ${cleanNumber.substring(4, 7)}-${cleanNumber.substring(7, 9)}-${cleanNumber.substring(9)}"
+                    }
+                    else -> phoneNumber
+                }
+            } catch (e: Exception) {
+                phoneNumber
+            }
         }
 
     }

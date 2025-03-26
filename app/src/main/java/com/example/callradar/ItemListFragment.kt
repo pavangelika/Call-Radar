@@ -165,13 +165,6 @@ class ItemListFragment : Fragment() {
             holder.typeIcon.setImageDrawable(getCallTypeIcon(context, item.type))
 
             val isMissed = item.type == CallLog.Calls.MISSED_TYPE
-            // Установка цветов
-//            val tintColor = if (isMissed) {
-//                ContextCompat.getColor(context, R.color.missed_call_primary)
-//            } else {
-//                ContextCompat.getColor(context, R.color.icon_default)
-//            }
-//            holder.typeIcon.imageTintList = ColorStateList.valueOf(tintColor)
 
             // Установка цветов
             if (isMissed) {

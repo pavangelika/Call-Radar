@@ -22,4 +22,6 @@
     <!-- Пропущенные звонки -->
     <color name="missed_call_primary">#CF6679</color>
     <color name="missed_call_secondary">#FFB4AB</color>
+
+
 </resources>

@@ -53,6 +53,7 @@ class MainActivity : AppCompatActivity() {
         Log.d("StartLog", "___________START______________")
         Log.d("StartLog", ".... Овца родилась... - CREATE")
 
+
     }
 
     override fun onStart() {

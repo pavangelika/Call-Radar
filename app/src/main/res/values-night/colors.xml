@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Основные цвета -->
+    <color name="md_theme_primary">#D0BCFF</color>
+    <color name="md_theme_on_primary">#381E72</color>
+    <color name="md_theme_primary_container">#4F378B</color>
+    <color name="md_theme_on_primary_container">#EADDFF</color>
+
+    <!-- Поверхности -->
+    <color name="md_theme_surface">#1C1B1F</color>
+    <color name="md_theme_on_surface">#E6E1E5</color>
+    <color name="md_theme_surface_variant">#49454F</color>
+
+    <!-- Системные бары -->
+    <color name="md_theme_status_bar_background">#1C1B1F</color>
+
+    <!-- Текст и иконки -->
+    <color name="icon_default">#B3FFFFFF</color>
+    <color name="text_primary">#FFFFFFFF</color>
+    <color name="text_secondary">#B3FFFFFF</color>
+
+    <!-- Пропущенные звонки -->
+    <color name="missed_call_primary">#CF6679</color>
+    <color name="missed_call_secondary">#FFB4AB</color>
+</resources>

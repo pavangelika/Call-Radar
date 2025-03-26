@@ -2,14 +2,18 @@ package com.example.callradar
 
 import DatabaseHelper
 import android.content.Context
+import android.content.res.ColorStateList
 import android.os.Bundle
+import android.provider.CallLog
 import android.util.Log
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -18,6 +22,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.callradar.databinding.FragmentItemListBinding
 import com.example.callradar.databinding.ItemListContentBinding
 import com.example.callradar.calls.CallLogHelper
+import com.example.callradar.calls.CallLogHelper.getCallTypeIcon
 import com.example.callradar.calls.GroupedCallLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -154,7 +159,38 @@ class ItemListFragment : Fragment() {
             val search = helper.searchPhone(item.number)
             Log.d("numbersLog", "${item.number}")
 
-            holder.typeView.text = item.type.toString() // Тип звонка
+//            holder.typeView.text = item.type.toString() // Тип звонка
+
+            // Устанавливаем иконку звонка
+            holder.typeIcon.setImageDrawable(getCallTypeIcon(context, item.type))
+
+            val isMissed = item.type == CallLog.Calls.MISSED_TYPE
+            // Установка цветов
+//            val tintColor = if (isMissed) {
+//                ContextCompat.getColor(context, R.color.missed_call_primary)
+//            } else {
+//                ContextCompat.getColor(context, R.color.icon_default)
+//            }
+//            holder.typeIcon.imageTintList = ColorStateList.valueOf(tintColor)
+
+            // Установка цветов
+            if (isMissed) {
+                // Красный цвет для пропущенных звонков
+                val redColor = ContextCompat.getColor(context, R.color.missed_call_primary)
+                holder.typeIcon.imageTintList = ColorStateList.valueOf(redColor)
+                holder.contactView.setTextColor(redColor)
+            } else {
+                // Стандартные цвета для остальных звонков
+                holder.typeIcon.imageTintList = ColorStateList.valueOf(
+                    ContextCompat.getColor(context, R.color.icon_default)
+                )
+                holder.contactView.setTextColor(
+                    ContextCompat.getColor(context, R.color.text_primary)
+                )
+            }
+
+
+
             holder.contactView.text = when {
                 item.contactName == "Неизвестный" -> "${item.number} ${item.callCount}"
                 else -> "${item.contactName} ${item.callCount}"
@@ -201,7 +237,8 @@ class ItemListFragment : Fragment() {
 
         inner class ViewHolder(binding: ItemListContentBinding) :
             RecyclerView.ViewHolder(binding.root) {
-            val typeView: TextView = binding.callTypeIcon
+//            val typeView: TextView = binding.callTypeIcon
+            val typeIcon: ImageView = binding.callTypeIcon
             val contactView: TextView = binding.contactNameOrNumber
             val placeView: TextView = binding.callSource
             val dateView: TextView = binding.callDate

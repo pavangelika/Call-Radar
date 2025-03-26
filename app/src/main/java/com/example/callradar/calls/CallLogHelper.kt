@@ -10,6 +10,9 @@ import android.util.Log
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.HashMap
+import androidx.core.content.ContextCompat
+import android.graphics.drawable.Drawable
+import com.example.callradar.R
 
 /**
  * Вспомогательный класс для работы с журналом звонков.
@@ -115,6 +118,19 @@ object CallLogHelper {
         CallLog.Calls.BLOCKED_TYPE -> "Заблокированный"
         CallLog.Calls.VOICEMAIL_TYPE -> "Голосовая почта"
         else -> "Неизвестный тип"
+    }
+
+    /**
+     * Возвращает иконку для типа звонка (Material Design 2)
+     */
+    fun getCallTypeIcon(context: Context, type: Int): Drawable? = when (type) {
+        CallLog.Calls.INCOMING_TYPE -> ContextCompat.getDrawable(context, R.drawable.ic_call_received)
+        CallLog.Calls.OUTGOING_TYPE -> ContextCompat.getDrawable(context, R.drawable.ic_call_made)
+        CallLog.Calls.MISSED_TYPE -> ContextCompat.getDrawable(context, R.drawable.ic_call_missed)
+        CallLog.Calls.REJECTED_TYPE -> ContextCompat.getDrawable(context, R.drawable.ic_call_rejected)
+        CallLog.Calls.BLOCKED_TYPE -> ContextCompat.getDrawable(context, R.drawable.ic_block)
+        CallLog.Calls.VOICEMAIL_TYPE -> ContextCompat.getDrawable(context, R.drawable.ic_voicemail)
+        else -> null
     }
 
     /**

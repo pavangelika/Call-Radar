@@ -45,15 +45,18 @@ android {
 
 dependencies {
     // Для работы с разрешениями
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.appcompat:appcompat:1.7.0")
 // Для работы с email через SMTP
     implementation("com.sun.mail:android-mail:1.6.0")
     implementation("com.sun.mail:android-activation:1.6.0")
-    implementation("androidx.work:work-runtime-ktx:2.8.1")
+    implementation("androidx.work:work-runtime-ktx:2.10.0")
 
-    implementation ("androidx.recyclerview:recyclerview:1.3.1")
+    implementation ("androidx.recyclerview:recyclerview:1.4.0")
     implementation ("androidx.lifecycle:lifecycle-service:2.8.7")
+
+    implementation ("com.google.android.material:material:1.12.0")
+    implementation ("androidx.core:core-ktx:1.15.0")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

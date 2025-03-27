@@ -1,7 +1,9 @@
 package com.example.callradar
 
+import DatabaseHelper
 import android.content.ClipData
 import android.os.Bundle
+import android.provider.ContactsContract
 import android.util.Log
 import android.view.DragEvent
 import androidx.fragment.app.Fragment
@@ -29,6 +31,7 @@ class ItemDetailFragment : Fragment() {
     private var item: CallDetail? = null
     private var _binding: FragmentItemDetailBinding? = null
     private val binding get() = _binding!!
+    private lateinit var helper: DatabaseHelper
 
     private val dragListener = View.OnDragListener { v, event ->
         if (event.action == DragEvent.ACTION_DROP) {
@@ -42,6 +45,7 @@ class ItemDetailFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        helper = DatabaseHelper(requireContext()) // Инициализация здесь
         CallLogHelper.initializeItems(requireContext())
 
         arguments?.let {
@@ -68,45 +72,110 @@ class ItemDetailFragment : Fragment() {
 
     private fun updateContent() {
         item?.let { callDetail ->
+            val info = helper.searchPhone(callDetail.number)
+            val callType = if (info.contains("г.") && !info.contains("область", ignoreCase = true)) {
+                "Звонок с городского номера"
+            } else {
+                "Звонок с мобильного номера"
+            }
+
             // Устанавливаем заголовок
             binding.toolbarLayout?.title = when {
                 callDetail.contactName != "Неизвестный" -> callDetail.contactName
                 else -> callDetail.number
             }
 
-            // Устанавливаем информацию о номере/контакте
+            // Устанавливаем имя контакта
             binding.contactInfo?.text = when {
                 callDetail.contactName != "Неизвестный" -> callDetail.contactName
-                else -> "Неизвестный номер"
+//                else -> "Неизвестный номер"
+                else -> info
             }
 
-            binding.numberInfo?.text = callDetail.number
+            // Устанавливаем номера или источник звонка
+            binding.numberInfo?.text = when {
+                callDetail.contactName != "Неизвестный" -> {
+                    callDetail.allPhoneNumbers.distinct().joinToString(", ")
+                }
+                else -> {
+                    try {
+                        callType
+                    } catch (e: Exception) {
+                        Log.e("ItemDetail", "Error searching phone", e)
+                        callDetail.details.firstOrNull()?.accountApp ?: callDetail.number
+                    }
+                }
+            }
 
             // Очищаем контейнер перед добавлением новых элементов
             binding.callLogsContainer?.removeAllViews()
 
             // Добавляем записи о звонках
-            callDetail.details.forEach { detail ->
+            callDetail.details.sortedByDescending { it.date }.forEach { detail ->
                 val callItemView = layoutInflater.inflate(
                     R.layout.item_call_log_detail,
                     binding.callLogsContainer,
                     false
                 )
 
-                val icon = callItemView.findViewById<ImageView>(R.id.call_type_icon)
-                icon.setImageDrawable(CallLogHelper.getCallTypeIcon(requireContext(), detail.type))
+                // Устанавливаем иконку типа звонка
+                callItemView.findViewById<ImageView>(R.id.call_type_icon).apply {
+                    setImageDrawable(CallLogHelper.getCallTypeIcon(context, detail.type))
+                }
 
+                // Форматируем длительность
+                val durationText = when {
+                    detail.duration >= 3600 -> {
+                        val hours = detail.duration / 3600
+                        val minutes = (detail.duration % 3600) / 60
+                        val seconds = detail.duration % 60
+                        "$hours ч $minutes мин $seconds сек"
+                    }
+                    detail.duration >= 60 -> {
+                        val minutes = detail.duration / 60
+                        val seconds = detail.duration % 60
+                        "$minutes мин $seconds сек"
+                    }
+                    else -> "${detail.duration} сек"
+                }
+
+                // Заполняем данные звонка
                 callItemView.findViewById<TextView>(R.id.call_date).text = detail.date
                 callItemView.findViewById<TextView>(R.id.call_time).text = detail.time
-                callItemView.findViewById<TextView>(R.id.call_duration).text =
-                    detail.duration.secondsToTimeString()  // Теперь работает с Long
+                callItemView.findViewById<TextView>(R.id.call_duration).text = durationText
 
                 binding.callLogsContainer?.addView(callItemView)
             }
-
-
+        } ?: run {
+            Log.e("ItemDetailFragment", "Call detail item is null")
+            binding.contactInfo?.text = "Ошибка загрузки данных"
+            binding.numberInfo?.text = ""
         }
+    }
 
+    private fun getContactPhoneNumbers(contactName: String): String {
+        return try {
+            val phones = mutableListOf<String>()
+            val cursor = requireContext().contentResolver.query(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                null,
+                "${ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME} = ?",
+                arrayOf(contactName),
+                null
+            )
+
+            cursor?.use {
+                val numberIndex = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                while (it.moveToNext()) {
+                    phones.add(it.getString(numberIndex))
+                }
+            }
+
+            phones.distinct().joinToString("\n")  // Номера через новую строку
+        } catch (e: Exception) {
+            Log.e("ItemDetailFragment", "Error getting contact numbers", e)
+            ""
+        }
     }
 
     fun Long.secondsToTimeString(): String {

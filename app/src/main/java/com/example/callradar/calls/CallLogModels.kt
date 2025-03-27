@@ -25,6 +25,7 @@ data class GroupedCallLog(
 data class CallDetail(
     val number: String,
     val contactName: String,
+    val allPhoneNumbers: List<String>,
     val details: List<Detail>
 )
 
@@ -32,7 +33,8 @@ data class Detail(
     val type: Int,
     val date: String,
     val time: String,
-    val duration: Long
+    val duration: Long,
+    val accountApp: String
 )
 
 data class CallLogKey(

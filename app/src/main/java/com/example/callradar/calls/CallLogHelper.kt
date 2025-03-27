@@ -12,6 +12,7 @@ import java.util.*
 import kotlin.collections.HashMap
 import androidx.core.content.ContextCompat
 import android.graphics.drawable.Drawable
+import android.provider.ContactsContract
 import com.example.callradar.R
 
 /**
@@ -107,6 +108,38 @@ object CallLogHelper {
         }
     }
 
+    fun getContactPhoneNumbers(context: Context, contactName: String): List<String> {
+        val phones = mutableListOf<String>()
+
+        try {
+            val uri = ContactsContract.CommonDataKinds.Phone.CONTENT_URI
+            val projection = arrayOf(
+                ContactsContract.CommonDataKinds.Phone.NUMBER
+            )
+
+            val selection = "${ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME} = ?"
+            val selectionArgs = arrayOf(contactName)
+
+            context.contentResolver.query(
+                uri,
+                projection,
+                selection,
+                selectionArgs,
+                null
+            )?.use { cursor ->
+                val numberIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                while (cursor.moveToNext()) {
+                    cursor.getString(numberIndex)?.let { phones.add(it) }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("CallLogHelper", "Error getting contact numbers", e)
+        }
+
+        return phones.distinct()
+    }
+
+
     /**
      * Возвращает описание типа звонка.
      */
@@ -169,27 +202,37 @@ object CallLogHelper {
     /**
      * Формирование детализированных данных по звонкам.
      */
-    fun callDetails(callLogs: List<CallLogEntry>): List<CallDetail> {
+    fun callDetails(context: Context, callLogs: List<CallLogEntry>): List<CallDetail> {
         val dateFormatter = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
         val timeFormatter = SimpleDateFormat("HH:mm", Locale.getDefault())
 
         return callLogs
-            .groupBy { it.number }
+            .groupBy { it.number }  // Группируем по номеру, а не по имени
             .map { (number, group) ->
+                val contactName = group.first().contactName
+                val allNumbers = if (contactName != "Неизвестный") {
+                    getContactPhoneNumbers(context, contactName)
+                } else {
+                    listOf(number)  // Для неизвестных - только текущий номер
+                }
+
                 CallDetail(
                     number = number,
-                    contactName = group.first().contactName,
+                    contactName = contactName,
+                    allPhoneNumbers = allNumbers,
                     details = group.map {
                         Detail(
                             type = it.type,
                             date = dateFormatter.format(Date(it.date)),
                             time = timeFormatter.format(Date(it.date)),
-                            duration = it.duration
+                            duration = it.duration,
+                            accountApp = it.accountApp
                         )
                     }
                 )
             }
     }
+
 
     /**
      * Инициализация элементов для фрагмента деталей звонков.
@@ -199,15 +242,15 @@ object CallLogHelper {
         ITEM_MAP.clear()
 
         val callLogs = fetchCallLogs(context)
-        val groupedDetails = callDetails(callLogs)
+        Log.d("CallLogHelper", "Fetched logs: ${callLogs.size} entries") // Добавьте лог
+
+        val groupedDetails = callDetails(context, callLogs)
+        Log.d("CallLogHelper", "Grouped details: ${groupedDetails.size} entries") // Добавьте лог
 
         groupedDetails.forEach { detail ->
             ITEMS.add(detail)
             ITEM_MAP[detail.number] = detail
         }
-
-        Log.d("CallLogHelper", "ITEMS: $ITEMS")
-        Log.d("CallLogHelper", "ITEM_MAP keys: ${ITEM_MAP.keys}")
     }
 
     /** Список и карта элементов для фрагмента. */

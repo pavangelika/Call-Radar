@@ -11,7 +11,6 @@
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="8dp"
-        android:fontFamily="casual"
         android:text="Звонок с городского номера:"
         android:textColor="#FFFFFF"
         android:textSize="14sp" />
@@ -25,7 +24,6 @@
         android:layout_below="@id/call_type"
         android:text="г. Сургут"
         android:textAlignment="center"
-        android:fontFamily="casual"
         android:textColor="#FFFFFFFF"
         android:textSize="18sp" />
 

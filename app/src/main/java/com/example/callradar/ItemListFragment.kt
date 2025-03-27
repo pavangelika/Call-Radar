@@ -134,110 +134,75 @@ class ItemListFragment : Fragment() {
     // Адаптер для отображения звонков
     class SimpleItemRecyclerViewAdapter(
         private val context: Context,
-        private var callLogs: List<GroupedCallLog>, // Список данных о звонках
-        private val itemDetailFragmentContainer: View?, // Контейнер для деталей элементов
+        private var callLogs: List<GroupedCallLog>,
+        private val itemDetailFragmentContainer: View?,
         private val helper: DatabaseHelper
     ) : RecyclerView.Adapter<SimpleItemRecyclerViewAdapter.ViewHolder>() {
 
-        // Метод для обновления данных
         fun updateData(newData: List<GroupedCallLog>) {
             callLogs = newData
-            notifyDataSetChanged() // Уведомляем адаптер о том, что данные обновились
+            notifyDataSetChanged()
         }
 
-        // Создание нового ViewHolder для адаптера
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val binding =
-                ItemListContentBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            val binding = ItemListContentBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             return ViewHolder(binding)
         }
+
 
         // Привязка данных к элементам View
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = callLogs[position]
-//            Log.d("bundleLog", "callog $item")
-            val search = helper.searchPhone(item.number)
-            Log.d("numbersLog", "${item.number}")
-
-//            holder.typeView.text = item.type.toString() // Тип звонка
-
-            // Устанавливаем иконку звонка
-            holder.typeIcon.setImageDrawable(getCallTypeIcon(context, item.type))
-
+            val searchResult = helper.searchPhone(item.number)
+            val isCityCall = searchResult?.startsWith("г.") == true
             val isMissed = item.type == CallLog.Calls.MISSED_TYPE
 
-            // Установка цветов
-            if (isMissed) {
-                // Красный цвет для пропущенных звонков
-                val redColor = ContextCompat.getColor(context, R.color.missed_call_primary)
-                holder.typeIcon.imageTintList = ColorStateList.valueOf(redColor)
-                holder.contactView.setTextColor(redColor)
+            // Установка иконки и цвета
+            holder.typeIcon.setImageDrawable(getCallTypeIcon(context, item.type))
+            val iconColor = if (isMissed) {
+                ContextCompat.getColor(context, R.color.missed_call_primary)
             } else {
-                // Стандартные цвета для остальных звонков
-                holder.typeIcon.imageTintList = ColorStateList.valueOf(
-                    ContextCompat.getColor(context, R.color.icon_default)
-                )
-                holder.contactView.setTextColor(
-                    ContextCompat.getColor(context, R.color.text_primary)
-                )
+                ContextCompat.getColor(context, R.color.icon_default)
             }
+            holder.typeIcon.imageTintList = ColorStateList.valueOf(iconColor)
 
-            // Новый код начинается здесь:
-// Форматирование номера
-
-            val isCity = search?.startsWith("г.") == true
-            if (item.contactName == "Неизвестный") {
-                holder.contactView.text = formatPhoneNumber(item.number, isCity)
-                holder.placeView.text = if (isCity) search else item.accountApp ?: ""
-            } else {
-                holder.contactView.text = "${item.contactName} ${item.callCount}"
-                holder.placeView.text = item.accountApp
+            // Установка текста контакта/номера (всегда с счетчиком)
+            holder.contactView.text = when {
+                item.contactName != "Неизвестный" -> "${item.contactName} ${item.callCount}"
+                else -> "${formatPhoneNumber(item.number, isCityCall)} ${item.callCount}"  // Добавляем счетчик и для неизвестных
             }
-            // Новый код заканчивается здесь
+            holder.contactView.setTextColor(
+                ContextCompat.getColor(context, if (isMissed) R.color.missed_call_primary else R.color.text_primary)
+            )
 
+            // Установка места звонка
             holder.placeView.text = when {
-                item.contactName == "Неизвестный" -> search
-                else -> item.accountApp
+                item.contactName != "Неизвестный" -> item.accountApp ?: ""
+                else -> searchResult ?: item.accountApp ?: ""
             }
+
+            // Установка даты
             holder.dateView.text = item.date
 
-            with(holder.itemView) {
-                tag = item // Устанавливаем данные звонка в tag для передачи
-                setOnClickListener { itemView ->
-                    val item = itemView.tag as GroupedCallLog
-                    Log.d("callLog", "callog $item")
-
-                    val bundle = Bundle()
-                    // Передаем ID элемента
-                    bundle.putString(
-                        ItemDetailFragment.ARG_ITEM_ID,
-                        item.number
-                    )
-
-                    Log.d("bundleLog", "bundle $bundle")
-                    if (item.number == ItemDetailFragment.ARG_ITEM_ID) {
-                        Log.d("bundleLog", "item for ${item.number} $item")
-                    }
-
-
-                    if (itemDetailFragmentContainer != null) {
-                        itemDetailFragmentContainer.findNavController()
-                            .navigate(R.id.fragment_item_detail, bundle)
-                    } else {
-                        itemView.findNavController().navigate(R.id.show_item_detail, bundle)
-
-                    }
+            // Обработка клика
+            holder.itemView.tag = item
+            holder.itemView.setOnClickListener { view ->
+                val bundle = Bundle().apply {
+                    putString(ItemDetailFragment.ARG_ITEM_ID, item.number)
                 }
 
+                if (itemDetailFragmentContainer != null) {
+                    itemDetailFragmentContainer.findNavController()
+                        .navigate(R.id.fragment_item_detail, bundle)
+                } else {
+                    view.findNavController().navigate(R.id.show_item_detail, bundle)
+                }
             }
         }
 
-        // Возвращаем количество элементов в списке
         override fun getItemCount() = callLogs.size
 
-        inner class ViewHolder(binding: ItemListContentBinding) :
-            RecyclerView.ViewHolder(binding.root) {
-//            val typeView: TextView = binding.callTypeIcon
+        inner class ViewHolder(binding: ItemListContentBinding) : RecyclerView.ViewHolder(binding.root) {
             val typeIcon: ImageView = binding.callTypeIcon
             val contactView: TextView = binding.contactNameOrNumber
             val placeView: TextView = binding.callSource
@@ -248,13 +213,11 @@ class ItemListFragment : Fragment() {
             return try {
                 val cleanNumber = phoneNumber.replace("[^0-9]".toRegex(), "")
                 when {
-                    // Для всех городских номеров (начинающихся на 8 или +7)
                     isCity && (cleanNumber.startsWith("8") || cleanNumber.startsWith("7")) && cleanNumber.length == 11 -> {
                         val regionCode = cleanNumber.substring(1, 4)
                         val mainNumber = cleanNumber.substring(4)
                         "${cleanNumber[0]} ($regionCode${cleanNumber[4]}) ${mainNumber.substring(1, 3)}-${mainNumber.substring(3, 5)}-${mainNumber.substring(5)}"
                     }
-                    // Для обычных мобильных номеров
                     cleanNumber.startsWith("8") && cleanNumber.length == 11 -> {
                         "8 (${cleanNumber.substring(1, 4)}) ${cleanNumber.substring(4, 7)}-${cleanNumber.substring(7, 9)}-${cleanNumber.substring(9)}"
                     }
@@ -267,7 +230,6 @@ class ItemListFragment : Fragment() {
                 phoneNumber
             }
         }
-
     }
 
     override fun onDestroyView() {

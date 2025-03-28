@@ -8,8 +8,10 @@ import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.graphics.Typeface
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.ContactsContract
+import android.telephony.SmsManager
 import android.util.Log
 import android.view.DragEvent
 import androidx.fragment.app.Fragment
@@ -126,7 +128,7 @@ class ItemDetailFragment : Fragment() {
                     }
 
                     findViewById<ImageButton>(R.id.sms_button).setOnClickListener {
-                        sendSms(number)
+                        item?.let { sendSms(it.number) }
                     }
                 }
                 numbersContainer.addView(numberItem)
@@ -252,11 +254,17 @@ class ItemDetailFragment : Fragment() {
 
 
     private fun sendSms(number: String) {
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            data = Uri.parse("sms:$number")
+        try {
+            val intent = Intent(Intent.ACTION_SENDTO).apply {
+                data = Uri.parse("smsto:$number")  // Обратите внимание на "smsto:" вместо "sms:"
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(context, "Не удалось открыть приложение сообщений", Toast.LENGTH_SHORT).show()
         }
-        startActivity(intent)
     }
+
 
     companion object {
         /**

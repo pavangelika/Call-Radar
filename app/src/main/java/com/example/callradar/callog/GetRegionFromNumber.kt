@@ -2,18 +2,12 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.util.Log
-import java.io.File
-import java.sql.DriverManager
-import java.sql.ResultSet
 import java.sql.SQLException
-import java.sql.Connection
-import java.sql.Statement
 import java.io.FileOutputStream
 import java.io.IOException
-import java.io.InputStream
 
 
-class DatabaseHelper(private val appContext: Context) :
+class GetRegionFromNumber(private val appContext: Context) :
     SQLiteOpenHelper(appContext, DATABASE_NAME, null, DATABASE_VERSION) {
 
     companion object {

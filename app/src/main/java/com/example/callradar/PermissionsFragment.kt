@@ -1,6 +1,6 @@
 package com.example.callradar
 
-import DatabaseHelper
+import GetRegionFromNumber
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -13,7 +13,6 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
@@ -30,7 +29,7 @@ class PermissionsFragment : Fragment() {
     private lateinit var permissionsLauncher: ActivityResultLauncher<Array<String>>
     private lateinit var overlayPermissionLauncher: ActivityResultLauncher<Intent>
 
-    private lateinit var helper: DatabaseHelper
+    private lateinit var helper: GetRegionFromNumber
 
     private val text_prms1 =
         "Для получения информации о звонках разрешите наложение поверх других окон"
@@ -202,7 +201,7 @@ class PermissionsFragment : Fragment() {
 
     private fun navigateToCallLog() {
         // Инициализация базы данных
-        helper = DatabaseHelper(requireContext())
+        helper = GetRegionFromNumber(requireContext())
         helper.copyDatabase() // Подключение к базе данных
 
         val intent = Intent(requireContext(), ItemDetailHostActivity::class.java)

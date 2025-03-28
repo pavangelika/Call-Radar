@@ -1,7 +1,5 @@
 package com.example.callradar
 
-import DatabaseHelper
-import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -11,15 +9,8 @@ import android.util.Log
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.work.Constraints
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.NetworkType
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
-import com.example.callradar.calls.CallLogForegroundService
-import com.example.callradar.calls.GroupedCallLog
+import com.example.callradar.callog.CallLogForegroundService
 import com.example.callradar.databinding.ActivityMainBinding
-import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
 

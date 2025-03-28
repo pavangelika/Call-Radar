@@ -1,4 +1,4 @@
-package com.example.callradar.calls
+package com.example.callradar.callog
 
 /**
  * Модели данных для работы с журналом звонков.

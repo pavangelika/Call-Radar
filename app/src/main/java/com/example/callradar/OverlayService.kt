@@ -1,6 +1,6 @@
 package com.example.callradar
 
-import DatabaseHelper
+import GetRegionFromNumber
 import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
@@ -23,14 +23,13 @@ import android.telephony.PhoneStateListener
 import android.telephony.TelephonyManager
 import android.view.View
 import android.widget.TextView
-import com.example.callradar.databinding.OverlayLayoutBinding
 
 /** Сервис для отображения Overlay с номером телефона */
 class OverlayService : LifecycleService() {
 
     private lateinit var windowManager: WindowManager
     private lateinit var telephonyManager: TelephonyManager
-    private lateinit var helper: DatabaseHelper
+    private lateinit var helper: GetRegionFromNumber
     private var callType: String? = null
 
     private var overlayView: View? = null
@@ -41,7 +40,7 @@ class OverlayService : LifecycleService() {
         telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
         telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE)
         startForegroundService()
-        helper = DatabaseHelper(this)
+        helper = GetRegionFromNumber(this)
         helper.copyDatabase() // Подключение к базе данных
 
     }

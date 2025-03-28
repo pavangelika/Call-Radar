@@ -61,7 +61,7 @@
 
         <!-- Foreground Service -->
         <service
-            android:name=".calls.CallLogForegroundService"
+            android:name=".callog.CallLogForegroundService"
             android:exported="false"
             android:permission="android.permission.FOREGROUND_SERVICE" />
 

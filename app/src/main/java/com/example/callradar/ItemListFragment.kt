@@ -1,6 +1,6 @@
 package com.example.callradar
 
-import DatabaseHelper
+import GetRegionFromNumber
 import android.content.Context
 import android.content.res.ColorStateList
 import android.os.Bundle
@@ -16,14 +16,13 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import com.example.callradar.databinding.FragmentItemListBinding
 import com.example.callradar.databinding.ItemListContentBinding
-import com.example.callradar.calls.CallLogHelper
-import com.example.callradar.calls.CallLogHelper.getCallTypeIcon
-import com.example.callradar.calls.GroupedCallLog
+import com.example.callradar.callog.CallLogDataHelper
+import com.example.callradar.callog.CallLogDataHelper.getCallTypeIcon
+import com.example.callradar.callog.GroupedCallLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -60,7 +59,7 @@ class ItemListFragment : Fragment() {
 
     private var _binding: FragmentItemListBinding? = null
     private val binding get() = _binding!!
-    private lateinit var helper: DatabaseHelper
+    private lateinit var helper: GetRegionFromNumber
     private lateinit var callLogsAdapter: SimpleItemRecyclerViewAdapter
 
     // Метод для создания представления фрагмента
@@ -89,18 +88,18 @@ class ItemListFragment : Fragment() {
         ViewCompat.addOnUnhandledKeyEventListener(view, unhandledKeyEventListenerCompat)
 
 //        // Инициализация базы данных
-        helper = DatabaseHelper(requireContext())
+        helper = GetRegionFromNumber(requireContext())
 
         // Настраиваем RecyclerView
         val recyclerView: RecyclerView = binding.itemList
         setupRecyclerView(recyclerView, itemDetailFragmentContainer)
 
         // Запуск мониторинга звонков
-        CallLogHelper.startCallLogMonitoring(requireContext()) { updatedLogs ->
+        CallLogDataHelper.startCallLogMonitoring(requireContext()) { updatedLogs ->
             CoroutineScope(Dispatchers.Main).launch {
                 try {
                     val groupedLogs = withContext(Dispatchers.IO) {
-                        CallLogHelper.groupCallLogs(updatedLogs)
+                        CallLogDataHelper.groupCallLogs(updatedLogs)
                     }
 
                     callLogsAdapter.updateData(groupedLogs)
@@ -118,8 +117,8 @@ class ItemListFragment : Fragment() {
         recyclerView: RecyclerView,
         itemDetailFragmentContainer: View?
     ) {
-        val callLogs = CallLogHelper.fetchCallLogs(requireContext()) // Получаем список звонков
-        val groupedLogs = CallLogHelper.groupCallLogs(callLogs)  // Группировка звонков
+        val callLogs = CallLogDataHelper.fetchCallLogs(requireContext()) // Получаем список звонков
+        val groupedLogs = CallLogDataHelper.groupCallLogs(callLogs)  // Группировка звонков
 
         // Настройка адаптера с начальными данными
         callLogsAdapter = SimpleItemRecyclerViewAdapter(
@@ -136,7 +135,7 @@ class ItemListFragment : Fragment() {
         private val context: Context,
         private var callLogs: List<GroupedCallLog>,
         private val itemDetailFragmentContainer: View?,
-        private val helper: DatabaseHelper
+        private val helper: GetRegionFromNumber
     ) : RecyclerView.Adapter<SimpleItemRecyclerViewAdapter.ViewHolder>() {
 
         fun updateData(newData: List<GroupedCallLog>) {

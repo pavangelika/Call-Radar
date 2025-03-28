@@ -1,4 +1,4 @@
-package com.example.callradar.calls
+package com.example.callradar.callog
 
 import CallLogUpdate
 import android.content.ComponentName
@@ -18,7 +18,7 @@ import com.example.callradar.R
 /**
  * Вспомогательный класс для работы с журналом звонков.
  */
-object CallLogHelper {
+object CallLogDataHelper {
 
     private var callLogObserver: CallLogUpdate? = null
 

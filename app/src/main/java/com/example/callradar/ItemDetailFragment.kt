@@ -1,7 +1,13 @@
 package com.example.callradar
 
+import android.Manifest
 import DatabaseHelper
 import android.content.ClipData
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.content.res.Resources
+import android.graphics.Typeface
+import android.net.Uri
 import android.os.Bundle
 import android.provider.ContactsContract
 import android.util.Log
@@ -11,8 +17,12 @@ import com.google.android.material.appbar.CollapsingToolbarLayout
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
+import androidx.core.content.ContextCompat
 import com.example.callradar.calls.CallDetail
 import com.example.callradar.databinding.FragmentItemDetailBinding
 import com.example.callradar.calls.CallLogHelper
@@ -71,44 +81,70 @@ class ItemDetailFragment : Fragment() {
     }
 
     private fun updateContent() {
+//        item?.let { callDetail ->
+//            val info = helper.searchPhone(callDetail.number)
+//            val callType = if (info.contains("г.") && !info.contains("область", ignoreCase = true)) {
+//                "Городской номер"
+//            } else {
+//                "Мобильный номер"
+//            }
         item?.let { callDetail ->
-            val info = helper.searchPhone(callDetail.number)
-            val callType = if (info.contains("г.") && !info.contains("область", ignoreCase = true)) {
-                "Звонок с городского номера"
-            } else {
-                "Звонок с мобильного номера"
-            }
-
-            // Устанавливаем заголовок
             binding.toolbarLayout?.title = when {
                 callDetail.contactName != "Неизвестный" -> callDetail.contactName
                 else -> callDetail.number
             }
 
-            // Устанавливаем имя контакта
-            binding.contactInfo?.text = when {
-                callDetail.contactName != "Неизвестный" -> callDetail.contactName
-//                else -> "Неизвестный номер"
-                else -> info
+            binding.callLogsContainer?.removeAllViews()
+
+            val infoContainer = layoutInflater.inflate(
+                R.layout.item_contact_info_block,
+                binding.callLogsContainer,
+                false
+            )
+
+            infoContainer.findViewById<TextView>(R.id.contact_name).text =
+                if (callDetail.contactName != "Неизвестный") callDetail.contactName else "Неизвестный номер"
+
+            val numbersContainer = infoContainer.findViewById<LinearLayout>(R.id.numbers_container)
+
+            val numbersToShow = if (callDetail.contactName != "Неизвестный") {
+                callDetail.allPhoneNumbers.distinct()
+            } else {
+                listOf(callDetail.number)
             }
 
-            // Устанавливаем номера или источник звонка
-            binding.numberInfo?.text = when {
-                callDetail.contactName != "Неизвестный" -> {
-                    callDetail.allPhoneNumbers.distinct().joinToString(", ")
-                }
-                else -> {
-                    try {
-                        callType
-                    } catch (e: Exception) {
-                        Log.e("ItemDetail", "Error searching phone", e)
-                        callDetail.details.firstOrNull()?.accountApp ?: callDetail.number
+            numbersToShow.forEach { number ->
+                val numberItem = layoutInflater.inflate(
+                    R.layout.item_phone_number_simple,
+                    numbersContainer,
+                    false
+                ).apply {
+                    findViewById<TextView>(R.id.phone_number).text = formatPhoneNumber(number)
+
+                    findViewById<ImageButton>(R.id.call_button).setOnClickListener {
+                        makeCall(number)
+                    }
+
+                    findViewById<ImageButton>(R.id.sms_button).setOnClickListener {
+                        sendSms(number)
                     }
                 }
+                numbersContainer.addView(numberItem)
             }
 
-            // Очищаем контейнер перед добавлением новых элементов
-            binding.callLogsContainer?.removeAllViews()
+            // Добавляем блок информации перед журналом звонков
+            binding.callLogsContainer?.addView(infoContainer)
+
+            // Добавляем заголовок журнала вызовов
+//            val header = TextView(context).apply {
+//                text = "Журнал вызовов"
+//                textSize = 18f
+//                setTypeface(typeface, Typeface.BOLD)
+//                setPadding(0, 16.dpToPx(), 0, 8.dpToPx())
+//            }
+//            binding.callLogsContainer?.addView(header)
+
+
 
             // Добавляем записи о звонках
             callDetail.details.sortedByDescending { it.date }.forEach { detail ->
@@ -148,46 +184,78 @@ class ItemDetailFragment : Fragment() {
             }
         } ?: run {
             Log.e("ItemDetailFragment", "Call detail item is null")
-            binding.contactInfo?.text = "Ошибка загрузки данных"
-            binding.numberInfo?.text = ""
+//            binding.contactInfo?.text = "Ошибка загрузки данных"
+//            binding.numberInfo?.text = ""
         }
     }
 
-    private fun getContactPhoneNumbers(contactName: String): String {
+    private fun formatPhoneNumber(phone: String): String {
         return try {
-            val phones = mutableListOf<String>()
-            val cursor = requireContext().contentResolver.query(
-                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                null,
-                "${ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME} = ?",
-                arrayOf(contactName),
-                null
-            )
+            // Упрощенное форматирование номера
+            when {
+                phone.length == 11 && phone.startsWith("8") ->
+                    "+7 (${phone.substring(1, 4)}) ${phone.substring(4, 7)}-${phone.substring(7, 9)}-${phone.substring(9)}"
+                phone.length == 11 && phone.startsWith("7") ->
+                    "+7 (${phone.substring(1, 4)}) ${phone.substring(4, 7)}-${phone.substring(7, 9)}-${phone.substring(9)}"
+                phone.length == 10 ->
+                    "+7 (${phone.substring(0, 3)}) ${phone.substring(3, 6)}-${phone.substring(6, 8)}-${phone.substring(8)}"
+                else -> phone
+            }
+        } catch (e: Exception) {
+            phone
+        }
+    }
 
-            cursor?.use {
-                val numberIndex = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
-                while (it.moveToNext()) {
-                    phones.add(it.getString(numberIndex))
+    private fun Int.dpToPx(): Int {
+        return (this * Resources.getSystem().displayMetrics.density).toInt()
+    }
+
+    private fun makeCall(number: String) {
+        // Проверяем разрешение
+        if (ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.CALL_PHONE
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            // Создаем intent для прямого вызова
+            val intent = Intent(Intent.ACTION_CALL).apply {
+                data = Uri.parse("tel:$number")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            startActivity(intent)
+        } else {
+            // Запрашиваем разрешение, если его нет
+            requestPermissions(
+                arrayOf(Manifest.permission.CALL_PHONE),
+                REQUEST_CALL_PHONE_PERMISSION
+            )
+        }
+    }
+
+    // Обработка результата запроса разрешений
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        when (requestCode) {
+            REQUEST_CALL_PHONE_PERMISSION -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // Повторяем вызов, если разрешение получено
+                    item?.let { makeCall(it.number) }
+                } else {
+                    Toast.makeText(context, "Необходимо разрешение для совершения звонков", Toast.LENGTH_SHORT).show()
                 }
             }
-
-            phones.distinct().joinToString("\n")  // Номера через новую строку
-        } catch (e: Exception) {
-            Log.e("ItemDetailFragment", "Error getting contact numbers", e)
-            ""
         }
     }
 
-    fun Long.secondsToTimeString(): String {
-        val hours = this / 3600
-        val minutes = (this % 3600) / 60
-        val seconds = this % 60
 
-        return when {
-            hours > 0 -> "$hours час $minutes мин $seconds сек"
-            minutes > 0 -> "$minutes мин $seconds сек"
-            else -> "$seconds сек"
+    private fun sendSms(number: String) {
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            data = Uri.parse("sms:$number")
         }
+        startActivity(intent)
     }
 
     companion object {
@@ -195,6 +263,7 @@ class ItemDetailFragment : Fragment() {
          * The fragment argument representing the call log ID that this fragment represents.
          */
         const val ARG_ITEM_ID = "item_id"
+        private const val REQUEST_CALL_PHONE_PERMISSION = 101
     }
 
     override fun onDestroyView() {

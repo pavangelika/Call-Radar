@@ -248,7 +248,7 @@ object CallLogDataHelper {
 
         groupedLogs.forEach { log ->
             val details = callLogs
-                .filter { it.number == log.number } // Для неизвестных берем только этот номер
+                .filter { log.allNumbers.contains(it.number) } // Фильтруем по всем номерам контакта
                 .map {
                     Detail(
                         number = it.number,
@@ -268,7 +268,10 @@ object CallLogDataHelper {
             )
 
             ITEMS.add(detail)
-            ITEM_MAP[log.number] = detail
+            // Добавляем в карту по всем номерам контакта
+            log.allNumbers.forEach { number ->
+                ITEM_MAP[number] = detail
+            }
         }
     }
 

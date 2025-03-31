@@ -1,7 +1,7 @@
 package com.example.callradar
 
 import android.Manifest
-import GetRegionFromNumber
+import com.example.callradar.utils.GetRegionFromNumber
 import android.content.ClipData
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -96,10 +96,13 @@ class ItemDetailFragment : Fragment() {
 
     private fun updateContent() {
         item?.let { callDetail ->
+            val searchResult = helper.searchPhone(callDetail.number)
+            val isCityCall = searchResult.startsWith("г.") &&
+                    (!searchResult.contains("обл.") && !searchResult.contains("АО") && !searchResult.contains("округ"))
             if (callDetail.contactName != "Неизвестный") {
                 binding.toolbarLayout?.title = callDetail.contactName
             } else {
-                binding.toolbarLayout?.title = callDetail.number
+                binding.toolbarLayout?.title = FormatPhoneNumber.formatPhoneNumber(callDetail.number, isCityCall)
             }
 
             binding.callLogsContainer?.removeAllViews()
@@ -115,12 +118,16 @@ class ItemDetailFragment : Fragment() {
 
             // Добавляем каждый номер с кнопками
             callDetail.allPhoneNumbers.distinct().forEach { number ->
-                val numberInfo = helper.searchPhone(number)
-                val callType = if (numberInfo?.contains("г.") == true &&
-                    !numberInfo.contains("область", ignoreCase = true)) {
-                    " (городской)"
-                } else {
-                    " (мобильный)"
+                val searchResult = helper.searchPhone(number)
+                val callType = when {
+                    searchResult.startsWith("г.") &&
+                            !searchResult.contains("обл.") &&
+                            !searchResult.contains("АО") &&
+                            !searchResult.contains("округ") -> "(городской)"
+                    searchResult.contains("обл.") ||
+                            searchResult.contains("АО") ||
+                            searchResult.contains("округ") -> "(мобильный)"
+                    else -> ""
                 }
 
                 val numberItem = layoutInflater.inflate(
@@ -128,8 +135,9 @@ class ItemDetailFragment : Fragment() {
                     numbersContainer,
                     false
                 ).apply {
-                    findViewById<TextView>(R.id.phone_number).text = formatPhoneNumber(number)
-                    findViewById<TextView>(R.id.call_source).text = "$numberInfo$callType"
+                    findViewById<TextView>(R.id.phone_number).text = FormatPhoneNumber.formatPhoneNumber(number, isCityCall)
+                    findViewById<TextView>(R.id.call_source).text = "$callType"
+                    findViewById<TextView>(R.id.place).text = "$searchResult"
 
                     findViewById<ImageButton>(R.id.call_button).setOnClickListener {
                         makeCall(number)
@@ -160,17 +168,9 @@ class ItemDetailFragment : Fragment() {
 
             // Для каждого номера контакта создаем отдельную секцию
             numbersToShow.forEach { number ->
-                val numberInfo = helper.searchPhone(number)
-                val callType = if (numberInfo?.contains("г.") == true &&
-                    !numberInfo.contains("область", ignoreCase = true)) {
-                    " (городской)"
-                } else {
-                    " (мобильный)"
-                }
-
                 // Заголовок с номером телефона
                 val numberHeader = TextView(context).apply {
-                    text = "${formatPhoneNumber(number)}"
+                    text = FormatPhoneNumber.formatPhoneNumber(number, isCityCall)
                     textSize = 16f
                     setTypeface(typeface, Typeface.BOLD)
                     setPadding(0, 16.dpToPx(), 0, 8.dpToPx())
@@ -212,21 +212,6 @@ class ItemDetailFragment : Fragment() {
     }
 
     // Эти методы должны быть на уровне класса, а не внутри updateContent()
-    private fun formatPhoneNumber(phone: String): String {
-        return try {
-            when {
-                phone.length == 11 && phone.startsWith("8") ->
-                    "+7 (${phone.substring(1, 4)}) ${phone.substring(4, 7)}-${phone.substring(7, 9)}-${phone.substring(9)}"
-                phone.length == 11 && phone.startsWith("7") ->
-                    "+7 (${phone.substring(1, 4)}) ${phone.substring(4, 7)}-${phone.substring(7, 9)}-${phone.substring(9)}"
-                phone.length == 10 ->
-                    "+7 (${phone.substring(0, 3)}) ${phone.substring(3, 6)}-${phone.substring(6, 8)}-${phone.substring(8)}"
-                else -> phone
-            }
-        } catch (e: Exception) {
-            phone
-        }
-    }
 
     private fun Int.dpToPx(): Int {
         return (this * Resources.getSystem().displayMetrics.density).toInt()

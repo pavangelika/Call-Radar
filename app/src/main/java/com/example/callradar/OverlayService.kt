@@ -1,6 +1,6 @@
 package com.example.callradar
 
-import GetRegionFromNumber
+import com.example.callradar.utils.GetRegionFromNumber
 import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel

@@ -1,6 +1,6 @@
 package com.example.callradar
 
-import GetRegionFromNumber
+import com.example.callradar.utils.GetRegionFromNumber
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager

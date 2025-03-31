@@ -1,3 +1,5 @@
+package com.example.callradar.utils
+
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
@@ -254,7 +256,7 @@ class GetRegionFromNumber(private val appContext: Context) :
 
     fun formatPhoneNumber(phoneNumber: String): Pair<String, String> {
         var formattedNumber = phoneNumber.trim()
-        var country = "Неизвестная страна"
+        var country = "Неверно набранный номер"
 
         if (formattedNumber.length == 10 && formattedNumber.startsWith("9")) {
             country = "Россия"

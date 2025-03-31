@@ -1,6 +1,6 @@
 package com.example.callradar
 
-import GetRegionFromNumber
+import com.example.callradar.utils.GetRegionFromNumber
 import android.content.Context
 import android.content.res.ColorStateList
 import android.os.Bundle
@@ -153,7 +153,8 @@ class ItemListFragment : Fragment() {
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = callLogs[position]
             val searchResult = helper.searchPhone(item.number)
-            val isCityCall = searchResult?.startsWith("г.") == true
+            val isCityCall = searchResult.startsWith("г.") &&
+                    (!searchResult.contains("обл.") && !searchResult.contains("АО") && !searchResult.contains("округ"))
             val isMissed = item.type == CallLog.Calls.MISSED_TYPE
 
             // Установка иконки и цвета
@@ -165,20 +166,28 @@ class ItemListFragment : Fragment() {
             }
             holder.typeIcon.imageTintList = ColorStateList.valueOf(iconColor)
 
-            // Установка текста контакта/номера (всегда с счетчиком)
+// Установка текста контакта/номера (счетчик только для пропущенных)
             holder.contactView.text = when {
-                item.contactName != "Неизвестный" -> "${item.contactName} ${item.callCount}"
-                else -> "${formatPhoneNumber(item.number, isCityCall)} ${item.callCount}"  // Добавляем счетчик и для неизвестных
+                item.contactName != "Неизвестный" -> {
+                    if (isMissed) "${item.contactName} ${item.callCount}" else item.contactName
+                }
+                else -> {
+                    if (isMissed) "${FormatPhoneNumber.formatPhoneNumber(item.number, isCityCall)} ${item.callCount}"
+                    else FormatPhoneNumber.formatPhoneNumber(item.number, isCityCall)
+                }
             }
+
             holder.contactView.setTextColor(
                 ContextCompat.getColor(context, if (isMissed) R.color.missed_call_primary else R.color.text_primary)
             )
 
             // Установка места звонка
-            holder.placeView.text = when {
-                item.contactName != "Неизвестный" -> item.accountApp ?: ""
-                else -> searchResult ?: item.accountApp ?: ""
-            }
+//            holder.placeView.text = when {
+//                item.contactName != "Неизвестный" -> item.accountApp ?: ""
+//                else -> searchResult ?: item.accountApp ?: ""
+//            }
+
+            holder.placeView.text =  searchResult ?: item.accountApp ?: ""
 
             // Установка даты
             holder.dateView.text = item.date
@@ -210,27 +219,7 @@ class ItemListFragment : Fragment() {
             val dateView: TextView = binding.callDate
         }
 
-        private fun formatPhoneNumber(phoneNumber: String, isCity: Boolean): String {
-            return try {
-                val cleanNumber = phoneNumber.replace("[^0-9]".toRegex(), "")
-                when {
-                    isCity && (cleanNumber.startsWith("8") || cleanNumber.startsWith("7")) && cleanNumber.length == 11 -> {
-                        val regionCode = cleanNumber.substring(1, 4)
-                        val mainNumber = cleanNumber.substring(4)
-                        "${cleanNumber[0]} ($regionCode${cleanNumber[4]}) ${mainNumber.substring(1, 3)}-${mainNumber.substring(3, 5)}-${mainNumber.substring(5)}"
-                    }
-                    cleanNumber.startsWith("8") && cleanNumber.length == 11 -> {
-                        "8 (${cleanNumber.substring(1, 4)}) ${cleanNumber.substring(4, 7)}-${cleanNumber.substring(7, 9)}-${cleanNumber.substring(9)}"
-                    }
-                    cleanNumber.startsWith("7") && cleanNumber.length == 11 -> {
-                        "+7 (${cleanNumber.substring(1, 4)}) ${cleanNumber.substring(4, 7)}-${cleanNumber.substring(7, 9)}-${cleanNumber.substring(9)}"
-                    }
-                    else -> phoneNumber
-                }
-            } catch (e: Exception) {
-                phoneNumber
-            }
-        }
+
     }
 
     override fun onDestroyView() {

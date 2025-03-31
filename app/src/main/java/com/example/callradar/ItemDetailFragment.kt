@@ -99,9 +99,9 @@ class ItemDetailFragment : Fragment() {
             val info = helper.searchPhone(callDetail.number)
             val callType = if (info?.contains("г.") == true &&
                 !info.contains("область", ignoreCase = true)) {
-                " (гор)"
+                " (городской)"
             } else {
-                " (моб)"
+                " (мобильный)"
             }
             binding.toolbarLayout?.title = when {
                 callDetail.contactName != "Неизвестный" -> callDetail.contactName
@@ -161,11 +161,10 @@ class ItemDetailFragment : Fragment() {
             }
             binding.callLogsContainer?.addView(journalHeader)
 
-            // Группируем звонки по номеру телефона
-            val callsByNumber = callDetail.details.groupBy { callDetail.number }
+// Для каждого номера контакта создаем отдельную секцию
+            callDetail.allPhoneNumbers.distinct().forEach { number ->
 
-            callsByNumber.forEach { (number, calls) ->
-                // Заголовок с номером телефона и типом
+                // Заголовок с номером телефона
                 val numberHeader = TextView(context).apply {
                     text = "${formatPhoneNumber(number)}"
                     textSize = 16f
@@ -173,9 +172,12 @@ class ItemDetailFragment : Fragment() {
                     setPadding(0, 16.dpToPx(), 0, 8.dpToPx())
                 }
                 binding.callLogsContainer?.addView(numberHeader)
+                // Фильтруем звонки по текущему номеру
+
+                val callsForNumber = callDetail.details.filter { callDetail.number == number }
 
                 // Добавляем все звонки для этого номера
-                calls.sortedByDescending { it.date }.forEach { detail ->
+                callsForNumber.sortedByDescending { it.date }.forEach { detail ->
                     val callItemView = layoutInflater.inflate(
                         R.layout.item_call_log_detail,
                         binding.callLogsContainer,

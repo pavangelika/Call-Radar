@@ -19,7 +19,8 @@ data class GroupedCallLog(
     val callCount: String,
     val date: String,
     val contactName: String,
-    val accountApp: String
+    val accountApp: String,
+    val allNumbers: List<String> = listOf(number) // Все номера контакта
 )
 
 data class CallDetail(

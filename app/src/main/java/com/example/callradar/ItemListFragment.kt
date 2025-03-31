@@ -188,6 +188,8 @@ class ItemListFragment : Fragment() {
             holder.itemView.setOnClickListener { view ->
                 val bundle = Bundle().apply {
                     putString(ItemDetailFragment.ARG_ITEM_ID, item.number)
+                    // Передаем все номера контакта
+                    putStringArrayList(ItemDetailFragment.ARG_ALL_NUMBERS, ArrayList(item.allNumbers))
                 }
 
                 if (itemDetailFragmentContainer != null) {

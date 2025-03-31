@@ -178,23 +178,24 @@ object CallLogDataHelper {
      */
     fun groupCallLogs(callLogs: List<CallLogEntry>): List<GroupedCallLog> {
         val dateFormatter = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
+
         return callLogs
-            .groupBy {
-                CallLogKey(
-                    it.number,
-                    dateFormatter.format(Date(it.date)),
-                    it.type,
-                    it.accountApp
-                )
+            .groupBy { entry ->
+                // Для неизвестных номеров группируем по номеру, для известных - по имени
+                if (entry.contactName == "Неизвестный") entry.number else entry.contactName
             }
             .map { (key, group) ->
+                val lastCall = group.maxByOrNull { it.date }!!
+
                 GroupedCallLog(
-                    type = key.type,
-                    number = key.number,
+                    type = lastCall.type,
+                    number = lastCall.number,
                     callCount = if (group.size > 1) "(${group.size})" else "",
-                    contactName = group.first().contactName,
-                    date = key.date,
-                    accountApp = key.accountApp
+                    contactName = if (lastCall.contactName == "Неизвестный") "Неизвестный" else key,
+                    date = dateFormatter.format(Date(lastCall.date)),
+                    accountApp = lastCall.accountApp,
+                    allNumbers = if (lastCall.contactName == "Неизвестный") listOf(lastCall.number)
+                    else group.map { it.number }.distinct()
                 )
             }
     }
@@ -242,14 +243,30 @@ object CallLogDataHelper {
         ITEM_MAP.clear()
 
         val callLogs = fetchCallLogs(context)
-        Log.d("CallLogHelper", "Fetched logs: ${callLogs.size} entries") // Добавьте лог
+        val groupedLogs = groupCallLogs(callLogs)
 
-        val groupedDetails = callDetails(context, callLogs)
-        Log.d("CallLogHelper", "Grouped details: ${groupedDetails.size} entries") // Добавьте лог
+        groupedLogs.forEach { log ->
+            val details = callLogs
+                .filter { it.number == log.number } // Для неизвестных берем только этот номер
+                .map {
+                    Detail(
+                        type = it.type,
+                        date = formatDateddMMyyyy(it.date),
+                        time = formatDateTime(it.date),
+                        duration = it.duration,
+                        accountApp = it.accountApp
+                    )
+                }
 
-        groupedDetails.forEach { detail ->
+            val detail = CallDetail(
+                number = log.number,
+                contactName = log.contactName,
+                allPhoneNumbers = log.allNumbers,
+                details = details
+            )
+
             ITEMS.add(detail)
-            ITEM_MAP[detail.number] = detail
+            ITEM_MAP[log.number] = detail
         }
     }
 

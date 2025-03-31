@@ -53,13 +53,29 @@ class ItemDetailFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        helper = GetRegionFromNumber(requireContext()) // Инициализация здесь
+        helper = GetRegionFromNumber(requireContext())
         CallLogDataHelper.initializeItems(requireContext())
 
         arguments?.let {
             if (it.containsKey(ARG_ITEM_ID)) {
                 val itemId = it.getString(ARG_ITEM_ID)
-                item = CallLogDataHelper.ITEM_MAP[itemId]
+                val allNumbers = it.getStringArrayList(ARG_ALL_NUMBERS) ?: listOf(itemId)
+
+                // Находим детали по всем номерам контакта
+                val allDetails = allNumbers.flatMap { number ->
+                    CallLogDataHelper.ITEM_MAP[number]?.details ?: emptyList()
+                }
+
+                item = if (allDetails.isNotEmpty()) {
+                    CallDetail(
+                        number = itemId ?: "",
+                        contactName = CallLogDataHelper.ITEM_MAP[itemId]?.contactName ?: "Неизвестный",
+                        allPhoneNumbers = allNumbers,
+                        details = allDetails
+                    )
+                } else {
+                    null
+                }
             }
         }
     }
@@ -243,6 +259,7 @@ class ItemDetailFragment : Fragment() {
          * The fragment argument representing the call log ID that this fragment represents.
          */
         const val ARG_ITEM_ID = "item_id"
+        const val ARG_ALL_NUMBERS = "all_numbers"
         private const val REQUEST_CALL_PHONE_PERMISSION = 101
     }
 

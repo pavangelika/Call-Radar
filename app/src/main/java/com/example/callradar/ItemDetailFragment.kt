@@ -97,12 +97,12 @@ class ItemDetailFragment : Fragment() {
     private fun updateContent() {
         item?.let { callDetail ->
             val info = helper.searchPhone(callDetail.number)
-            val callType = if (info.contains("г.") && !info.contains("область", ignoreCase = true)) {
-                "Городской номер"
+            val callType = if (info?.contains("г.") == true &&
+                !info.contains("область", ignoreCase = true)) {
+                " (гор)"
             } else {
-                "Мобильный номер"
+                " (моб)"
             }
-
             binding.toolbarLayout?.title = when {
                 callDetail.contactName != "Неизвестный" -> callDetail.contactName
                 else -> callDetail.number
@@ -116,8 +116,8 @@ class ItemDetailFragment : Fragment() {
                 false
             )
 
-            infoContainer.findViewById<TextView>(R.id.contact_name).text =
-                if (callDetail.contactName != "Неизвестный") "" else callType + info
+//            infoContainer.findViewById<TextView>(R.id.contact_name).text =
+//                if (callDetail.contactName != "Неизвестный") "" else info
 
             val numbersContainer = infoContainer.findViewById<LinearLayout>(R.id.numbers_container)
 
@@ -136,6 +136,7 @@ class ItemDetailFragment : Fragment() {
                     false
                 ).apply {
                     findViewById<TextView>(R.id.phone_number).text = formatPhoneNumber(number)
+                    findViewById<TextView>(R.id.call_source).text = "$info $callType"
 
                     findViewById<ImageButton>(R.id.call_button).setOnClickListener {
                         makeCall(number)
@@ -151,24 +152,25 @@ class ItemDetailFragment : Fragment() {
             // Добавляем блок информации перед журналом звонков
             binding.callLogsContainer?.addView(infoContainer)
 
+            // Добавляем заголовок "Журнал звонков"
+            val journalHeader = TextView(context).apply {
+                text = "Журнал звонков"
+                textSize = 20f
+                setTypeface(typeface, Typeface.BOLD)
+                setPadding(0, 16.dpToPx(), 0, 16.dpToPx())
+            }
+            binding.callLogsContainer?.addView(journalHeader)
+
             // Группируем звонки по номеру телефона
-            val callsByNumber = callDetail.details.groupBy {
-                it.accountApp ?: callDetail.number
-            }
+            val callsByNumber = callDetail.details.groupBy { callDetail.number }
 
-            // Сортируем номера по дате последнего звонка (новые сверху)
-            val sortedNumbers = callsByNumber.entries.sortedByDescending {
-                it.value.maxByOrNull { call -> call.date }?.date
-            }
-
-            // Добавляем журнал звонков для каждого номера
-            sortedNumbers.forEach { (number, calls) ->
-                // Заголовок с номером телефона
+            callsByNumber.forEach { (number, calls) ->
+                // Заголовок с номером телефона и типом
                 val numberHeader = TextView(context).apply {
-                    text = formatPhoneNumber(number)
-                    textSize = 18f
+                    text = "${formatPhoneNumber(number)}"
+                    textSize = 16f
                     setTypeface(typeface, Typeface.BOLD)
-                    setPadding(0, 24.dpToPx(), 0, 8.dpToPx())
+                    setPadding(0, 16.dpToPx(), 0, 8.dpToPx())
                 }
                 binding.callLogsContainer?.addView(numberHeader)
 

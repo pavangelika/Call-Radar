@@ -4,14 +4,45 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:paddingVertical="2dp">
+    android:paddingVertical="8dp"
+    android:paddingHorizontal="16dp">
 
-    <TextView
-        android:id="@+id/phone_number"
+    <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:textSize="16sp"/>
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/phone_number"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="16sp"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:id="@+id/call_type"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:textSize="14sp"
+                android:textColor="?android:attr/textColorSecondary"/>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/call_source"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginTop="2dp"/>
+    </LinearLayout>
 
     <ImageButton
         android:id="@+id/call_button"
@@ -19,7 +50,8 @@
         android:layout_height="32dp"
         android:layout_marginStart="8dp"
         android:src="@drawable/ic_call_made"
-        android:background="?attr/selectableItemBackgroundBorderless"/>
+        android:background="?attr/selectableItemBackgroundBorderless"
+/>
 
     <ImageButton
         android:id="@+id/sms_button"
@@ -27,5 +59,6 @@
         android:layout_height="32dp"
         android:layout_marginStart="8dp"
         android:src="@drawable/ic_sms"
-        android:background="?attr/selectableItemBackgroundBorderless"/>
+        android:background="?attr/selectableItemBackgroundBorderless"
+/>
 </LinearLayout>

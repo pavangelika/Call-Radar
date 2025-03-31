@@ -223,6 +223,7 @@ object CallLogDataHelper {
                     allPhoneNumbers = allNumbers,
                     details = group.map {
                         Detail(
+                            number = number,
                             type = it.type,
                             date = dateFormatter.format(Date(it.date)),
                             time = timeFormatter.format(Date(it.date)),
@@ -250,6 +251,7 @@ object CallLogDataHelper {
                 .filter { it.number == log.number } // Для неизвестных берем только этот номер
                 .map {
                     Detail(
+                        number = it.number,
                         type = it.type,
                         date = formatDateddMMyyyy(it.date),
                         time = formatDateTime(it.date),

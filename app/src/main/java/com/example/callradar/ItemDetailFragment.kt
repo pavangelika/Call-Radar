@@ -61,17 +61,17 @@ class ItemDetailFragment : Fragment() {
                 val itemId = it.getString(ARG_ITEM_ID)
                 val allNumbers = it.getStringArrayList(ARG_ALL_NUMBERS) ?: listOf(itemId)
 
-                // Находим детали по всем номерам контакта
-                val allDetails = allNumbers.flatMap { number ->
-                    CallLogDataHelper.ITEM_MAP[number]?.details ?: emptyList()
-                }
+                // Получаем детали для каждого номера отдельно
+                val detailsByNumber = allNumbers.mapNotNull { number ->
+                    CallLogDataHelper.ITEM_MAP[number]?.details
+                }.flatten()
 
-                item = if (allDetails.isNotEmpty()) {
+                item = if (detailsByNumber.isNotEmpty()) {
                     CallDetail(
                         number = itemId ?: "",
                         contactName = CallLogDataHelper.ITEM_MAP[itemId]?.contactName ?: "Неизвестный",
                         allPhoneNumbers = allNumbers,
-                        details = allDetails
+                        details = detailsByNumber
                     )
                 } else {
                     null
@@ -96,63 +96,53 @@ class ItemDetailFragment : Fragment() {
 
     private fun updateContent() {
         item?.let { callDetail ->
-            val info = helper.searchPhone(callDetail.number)
-            val callType = if (info?.contains("г.") == true &&
-                !info.contains("область", ignoreCase = true)) {
-                " (городской)"
+            if (callDetail.contactName != "Неизвестный") {
+                binding.toolbarLayout?.title = callDetail.contactName
             } else {
-                " (мобильный)"
-            }
-            binding.toolbarLayout?.title = when {
-                callDetail.contactName != "Неизвестный" -> callDetail.contactName
-                else -> callDetail.number
+                binding.toolbarLayout?.title = callDetail.number
             }
 
             binding.callLogsContainer?.removeAllViews()
 
+            // Добавляем информацию о контакте
             val infoContainer = layoutInflater.inflate(
                 R.layout.item_contact_info_block,
                 binding.callLogsContainer,
                 false
             )
 
-//            infoContainer.findViewById<TextView>(R.id.contact_name).text =
-//                if (callDetail.contactName != "Неизвестный") "" else info
-
             val numbersContainer = infoContainer.findViewById<LinearLayout>(R.id.numbers_container)
 
-            // Получаем все уникальные номера для контакта
-            val numbersToShow = if (callDetail.contactName != "Неизвестный") {
-                callDetail.allPhoneNumbers.distinct()
-            } else {
-                listOf(callDetail.number)
-            }
-
             // Добавляем каждый номер с кнопками
-            numbersToShow.forEach { number ->
+            callDetail.allPhoneNumbers.distinct().forEach { number ->
+                val numberInfo = helper.searchPhone(number)
+                val callType = if (numberInfo?.contains("г.") == true &&
+                    !numberInfo.contains("область", ignoreCase = true)) {
+                    " (городской)"
+                } else {
+                    " (мобильный)"
+                }
+
                 val numberItem = layoutInflater.inflate(
                     R.layout.item_phone_number_simple,
                     numbersContainer,
                     false
                 ).apply {
                     findViewById<TextView>(R.id.phone_number).text = formatPhoneNumber(number)
-                    findViewById<TextView>(R.id.call_source).text = "$info $callType"
+                    findViewById<TextView>(R.id.call_source).text = "$numberInfo$callType"
 
                     findViewById<ImageButton>(R.id.call_button).setOnClickListener {
                         makeCall(number)
                     }
-
                     findViewById<ImageButton>(R.id.sms_button).setOnClickListener {
                         sendSms(number)
                     }
                 }
                 numbersContainer.addView(numberItem)
             }
-
-            // Добавляем блок информации перед журналом звонков
             binding.callLogsContainer?.addView(infoContainer)
 
-            // Добавляем заголовок "Журнал звонков"
+            // Добавляем журнал звонков
             val journalHeader = TextView(context).apply {
                 text = "Журнал звонков"
                 textSize = 20f
@@ -161,8 +151,22 @@ class ItemDetailFragment : Fragment() {
             }
             binding.callLogsContainer?.addView(journalHeader)
 
-// Для каждого номера контакта создаем отдельную секцию
-            callDetail.allPhoneNumbers.distinct().forEach { number ->
+            // Получаем все уникальные номера для контакта
+            val numbersToShow = if (callDetail.contactName != "Неизвестный") {
+                callDetail.allPhoneNumbers.distinct()
+            } else {
+                listOf(callDetail.number)
+            }
+
+            // Для каждого номера контакта создаем отдельную секцию
+            numbersToShow.forEach { number ->
+                val numberInfo = helper.searchPhone(number)
+                val callType = if (numberInfo?.contains("г.") == true &&
+                    !numberInfo.contains("область", ignoreCase = true)) {
+                    " (городской)"
+                } else {
+                    " (мобильный)"
+                }
 
                 // Заголовок с номером телефона
                 val numberHeader = TextView(context).apply {
@@ -172,9 +176,9 @@ class ItemDetailFragment : Fragment() {
                     setPadding(0, 16.dpToPx(), 0, 8.dpToPx())
                 }
                 binding.callLogsContainer?.addView(numberHeader)
-                // Фильтруем звонки по текущему номеру
 
-                val callsForNumber = callDetail.details.filter { callDetail.number == number }
+                // Фильтруем звонки по текущему номеру
+                val callsForNumber = callDetail.details.filter { it.number == number }
 
                 // Добавляем все звонки для этого номера
                 callsForNumber.sortedByDescending { it.date }.forEach { detail ->

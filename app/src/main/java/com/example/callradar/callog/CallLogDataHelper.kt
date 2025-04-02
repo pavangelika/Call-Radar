@@ -225,8 +225,9 @@ object CallLogDataHelper {
                         Detail(
                             number = number,
                             type = it.type,
-                            date = dateFormatter.format(Date(it.date)),
-                            time = timeFormatter.format(Date(it.date)),
+                            date = it.date,  // Используем исходный timestamp
+                            dateString = dateFormatter.format(Date(it.date)),
+                            timeString = timeFormatter.format(Date(it.date)),
                             duration = it.duration,
                             accountApp = it.accountApp
                         )
@@ -253,8 +254,9 @@ object CallLogDataHelper {
                     Detail(
                         number = it.number,
                         type = it.type,
-                        date = formatDateddMMyyyy(it.date),
-                        time = formatDateTime(it.date),
+                        date = it.date,  // Используем исходный timestamp
+                        dateString = formatDateddMMyyyy(it.date),
+                        timeString = formatDateTime(it.date),
                         duration = it.duration,
                         accountApp = it.accountApp
                     )

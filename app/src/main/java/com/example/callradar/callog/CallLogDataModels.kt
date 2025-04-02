@@ -33,9 +33,9 @@ data class CallDetail(
 data class Detail(
     val number: String,
     val type: Int,
-    val date: String,
-    val time: String,
+    val date: Long,  // Хранить как timestamp
+    val dateString: String,  // Для отображения
+    val timeString: String,
     val duration: Long,
     val accountApp: String
 )
-

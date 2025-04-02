@@ -109,7 +109,7 @@ class ItemDetailFragment : Fragment() {
 
             // Добавляем информацию о контакте
             val infoContainer = layoutInflater.inflate(
-                R.layout.item_contact_info_block,
+                R.layout.detail_contact_info_block,
                 binding.callLogsContainer,
                 false
             )
@@ -131,7 +131,7 @@ class ItemDetailFragment : Fragment() {
                 }
 
                 val numberItem = layoutInflater.inflate(
-                    R.layout.item_phone_number_simple,
+                    R.layout.detail_phone_number,
                     numbersContainer,
                     false
                 ).apply {
@@ -183,7 +183,7 @@ class ItemDetailFragment : Fragment() {
                 // Добавляем все звонки для этого номера
                 callsForNumber.sortedByDescending { it.date }.forEach { detail ->
                     val callItemView = layoutInflater.inflate(
-                        R.layout.item_call_log_detail,
+                        R.layout.detail_callog,
                         binding.callLogsContainer,
                         false
                     )

@@ -369,6 +369,19 @@ object CallLogDataHelper {
         return null
     }
 
+    fun deleteCallLogForNumber(context: Context, number: String): Int {
+        return try {
+            context.contentResolver.delete(
+                CallLog.Calls.CONTENT_URI,
+                "${CallLog.Calls.NUMBER} = ?",
+                arrayOf(number)
+            )
+        } catch (e: Exception) {
+            Log.e("CallLogHelper", "Error deleting call log", e)
+            0
+        }
+    }
+
 
     /**
      * Инициализация элементов для фрагмента деталей звонков.

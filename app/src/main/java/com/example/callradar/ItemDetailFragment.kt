@@ -1,6 +1,7 @@
 package com.example.callradar
 
 import android.Manifest
+import android.app.AlertDialog
 import com.example.callradar.utils.GetRegionFromNumber
 import android.content.ClipData
 import android.content.Context
@@ -16,6 +17,9 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.Animation
+import android.view.animation.AnimationUtils
+import android.view.animation.DecelerateInterpolator
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -150,72 +154,319 @@ class ItemDetailFragment : Fragment() {
         return prefs.getBoolean(phoneNumber, false)
     }
 
+//    private fun updateContent() {
+//        item?.let { callDetail ->
+//            val searchResult = helper.searchPhone(callDetail.number)
+//            val isCityCall = searchResult.startsWith("г.") &&
+//                    (!searchResult.contains("обл.") && !searchResult.contains("АО") && !searchResult.contains("округ"))
+//
+//            binding.toolbarLayout?.title = if (callDetail.contactName != "Неизвестный") {
+//                callDetail.contactName
+//            } else {
+//                FormatPhoneNumber.formatPhoneNumber(callDetail.number, isCityCall)
+//            }
+//
+//            binding.callLogsContainer?.removeAllViews()
+//
+//            val infoContainer = layoutInflater.inflate(R.layout.detail_contact_info_block, binding.callLogsContainer, false)
+//            val numbersContainer = infoContainer.findViewById<LinearLayout>(R.id.numbers_container)
+//
+//            callDetail.allPhoneNumbers.distinct().forEach { number ->
+//
+//                val searchResult = helper.searchPhone(number)
+//                val callType = when {
+//                    searchResult.startsWith("г.") && !searchResult.contains("обл.") &&
+//                            !searchResult.contains("АО") && !searchResult.contains("округ") -> "(городской)"
+//                    searchResult.contains("обл.") || searchResult.contains("АО") ||
+//                            searchResult.contains("округ") -> "(мобильный)"
+//                    else -> ""
+//                }
+//
+//                val numberItem = layoutInflater.inflate(R.layout.detail_phone_number, numbersContainer, false).apply {
+//                    findViewById<TextView>(R.id.phone_number).text = FormatPhoneNumber.formatPhoneNumber(number, isCityCall)
+//                    findViewById<TextView>(R.id.call_source).text = callType
+//                    findViewById<TextView>(R.id.place).text = searchResult
+//
+//                    findViewById<ImageButton>(R.id.call_button).setOnClickListener { makeCall(number) }
+//                    findViewById<ImageButton>(R.id.sms_button).setOnClickListener { sendSms(number) }
+//                }
+//                numbersContainer.addView(numberItem)
+//            }
+//            binding.callLogsContainer?.addView(infoContainer)
+//
+//            val journalHeader = TextView(context).apply {
+//                text = "Журнал звонков"
+//                textSize = 20f
+//                setTypeface(typeface, Typeface.BOLD)
+//                setPadding(16, 16.dpToPx(), 8, 16.dpToPx())
+//            }
+//            binding.callLogsContainer?.addView(journalHeader)
+//
+//            val numbersToShow = if (callDetail.contactName != "Неизвестный") {
+//                callDetail.allPhoneNumbers.distinct()
+//            } else {
+//                listOf(callDetail.number)
+//            }
+//
+//            numbersToShow.forEach { number ->
+//                val headerView = layoutInflater.inflate(
+//                    R.layout.item_call_log_header,
+//                    binding.callLogsContainer,
+//                    false
+//                ).apply {
+//                    findViewById<TextView>(R.id.phone_number).text =
+//                        FormatPhoneNumber.formatPhoneNumber(number, isCityCall)
+//
+//                    val headerContainer = findViewById<LinearLayout>(R.id.header_container)
+//                    val expandIcon = findViewById<ImageView>(R.id.expand_icon)
+//                    val detailsContainer = findViewById<LinearLayout>(R.id.call_details_container)
+//
+//                    // По умолчанию список раскрыт
+//                    var isExpanded = true
+//
+//                    // Обработчик клика для всей строки
+//                    headerContainer.setOnClickListener {
+//                        isExpanded = !isExpanded
+//
+//                        if (isExpanded) {
+//                            detailsContainer.visibility = View.VISIBLE
+//                            val animation = AnimationUtils.loadAnimation(context, R.anim.fade_in)
+//                            detailsContainer.startAnimation(animation)
+//                            expandIcon.animate()
+//                                .rotation(0f)
+//                                .setDuration(300)
+//                                .setInterpolator(DecelerateInterpolator())
+//                                .start()
+//                        } else {
+//                            val animation = AnimationUtils.loadAnimation(context, R.anim.fade_out)
+//                            animation.setAnimationListener(object : Animation.AnimationListener {
+//                                override fun onAnimationStart(animation: Animation?) {}
+//                                override fun onAnimationRepeat(animation: Animation?) {}
+//                                override fun onAnimationEnd(animation: Animation?) {
+//                                    detailsContainer.visibility = View.GONE
+//                                }
+//                            })
+//                            detailsContainer.startAnimation(animation)
+//                            expandIcon.animate()
+//                                .rotation(180f)
+//                                .setDuration(300)
+//                                .setInterpolator(DecelerateInterpolator())
+//                                .start()
+//                        }
+//                    }
+//
+//                    // Добавляем детали звонков
+//                    callDetail.details
+//                        .filter { it.number == number }
+//                        .sortedByDescending { it.date }
+//                        .forEach { detail ->
+//                            val callItemView = layoutInflater.inflate(
+//                                R.layout.detail_callog,
+//                                detailsContainer,
+//                                false
+//                            ).apply {
+//                                findViewById<ImageView>(R.id.call_type_icon).setImageDrawable(
+//                                    CallLogDataHelper.getCallTypeIcon(context, detail.type))
+//
+//                                val durationText = when {
+//                                    detail.duration >= 3600 -> "${detail.duration / 3600} ч ${(detail.duration % 3600) / 60} мин"
+//                                    detail.duration >= 60 -> "${detail.duration / 60} мин"
+//                                    else -> "${detail.duration} сек"
+//                                }
+//
+//                                findViewById<TextView>(R.id.call_date).text = detail.dateString
+//                                findViewById<TextView>(R.id.call_time).text = detail.timeString
+//                                findViewById<TextView>(R.id.call_duration).text = durationText
+//                            }
+//                            detailsContainer.addView(callItemView)
+//                        }
+//
+//                    // Обработчик для кнопки удаления
+//                    findViewById<ImageButton>(R.id.delete_button).setOnClickListener {
+//                        AlertDialog.Builder(context)
+//                            .setTitle("Удалить журнал звонков")
+//                            .setMessage("Вы уверены, что хотите удалить все звонки для этого номера?")
+//                            .setPositiveButton("Удалить") { _, _ ->
+//                                // Удаляем звонки из базы данных
+//                                deleteCallLogForNumber(number)
+//                                // Обновляем интерфейс
+//                                updateContent()
+//                                Toast.makeText(context, "Журнал звонков очищен", Toast.LENGTH_SHORT).show()
+//                            }
+//                            .setNegativeButton("Отмена", null)
+//                            .show()
+//                    }
+//                }
+//
+//                binding.callLogsContainer?.addView(headerView)
+//            }
+//        } ?: run { Log.e("ItemDetailFragment", "Call detail item is null") }
+//    }
+
     private fun updateContent() {
         item?.let { callDetail ->
-            val searchResult = helper.searchPhone(callDetail.number)
-            val isCityCall = searchResult.startsWith("г.") &&
-                    (!searchResult.contains("обл.") && !searchResult.contains("АО") && !searchResult.contains("округ"))
+            // Обновляем контактную информацию (все номера)
+            updateContactInfo(callDetail)
 
-            binding.toolbarLayout?.title = if (callDetail.contactName != "Неизвестный") {
-                callDetail.contactName
-            } else {
-                FormatPhoneNumber.formatPhoneNumber(callDetail.number, isCityCall)
-            }
-
+            // Обновляем журнал звонков (только с существующими записями)
+            updateCallLogs(callDetail.copy(
+                details = callDetail.details.filter { detail ->
+                    CallLogDataHelper.ITEM_MAP[detail.number]?.details?.any {
+                        it.date == detail.date && it.type == detail.type
+                    } == true
+                }
+            ))
+        } ?: run {
+            Log.e("ItemDetailFragment", "Call detail item is null")
             binding.callLogsContainer?.removeAllViews()
+            binding.toolbarLayout?.title = ""
+        }
+    }
 
-            val infoContainer = layoutInflater.inflate(R.layout.detail_contact_info_block, binding.callLogsContainer, false)
-            val numbersContainer = infoContainer.findViewById<LinearLayout>(R.id.numbers_container)
+    private fun updateContactInfo(callDetail: CallDetail) {
+        val searchResult = helper.searchPhone(callDetail.number)
+        val isCityCall = searchResult.startsWith("г.") &&
+                (!searchResult.contains("обл.") && !searchResult.contains("АО") && !searchResult.contains("округ"))
 
-            callDetail.allPhoneNumbers.distinct().forEach { number ->
-                val searchResult = helper.searchPhone(number)
-                val callType = when {
-                    searchResult.startsWith("г.") && !searchResult.contains("обл.") &&
-                            !searchResult.contains("АО") && !searchResult.contains("округ") -> "(городской)"
-                    searchResult.contains("обл.") || searchResult.contains("АО") ||
-                            searchResult.contains("округ") -> "(мобильный)"
-                    else -> ""
+        // Обновляем заголовок
+        binding.toolbarLayout?.title = if (callDetail.contactName != "Неизвестный") {
+            callDetail.contactName
+        } else {
+            FormatPhoneNumber.formatPhoneNumber(callDetail.number, isCityCall)
+        }
+
+        // Удаляем предыдущую контактную информацию, если она есть
+        binding.callLogsContainer?.findViewWithTag<View>("contact_info_tag")?.let {
+            binding.callLogsContainer?.removeView(it)
+        }
+
+        // Создаем и добавляем блок с контактной информацией
+        val infoContainer = layoutInflater.inflate(
+            R.layout.detail_contact_info_block,
+            binding.callLogsContainer,
+            false
+        ).apply {
+            tag = "contact_info_tag"
+        }
+
+        val numbersContainer = infoContainer.findViewById<LinearLayout>(R.id.numbers_container)
+        numbersContainer.removeAllViews()
+
+        // Отображаем ВСЕ номера контакта, независимо от наличия звонков
+        callDetail.allPhoneNumbers.distinct().forEach { number ->
+            val numberSearchResult = helper.searchPhone(number)
+            val callType = when {
+                numberSearchResult.startsWith("г.") && !numberSearchResult.contains("обл.") &&
+                        !numberSearchResult.contains("АО") && !numberSearchResult.contains("округ") -> "(городской)"
+                numberSearchResult.contains("обл.") || numberSearchResult.contains("АО") ||
+                        numberSearchResult.contains("округ") -> "(мобильный)"
+                else -> ""
+            }
+
+            val numberItem = layoutInflater.inflate(R.layout.detail_phone_number, numbersContainer, false).apply {
+                findViewById<TextView>(R.id.phone_number).text = FormatPhoneNumber.formatPhoneNumber(number, isCityCall)
+                findViewById<TextView>(R.id.call_source).text = callType
+                findViewById<TextView>(R.id.place).text = numberSearchResult
+
+                findViewById<ImageButton>(R.id.call_button).setOnClickListener { makeCall(number) }
+                findViewById<ImageButton>(R.id.sms_button).setOnClickListener { sendSms(number) }
+            }
+            numbersContainer.addView(numberItem)
+        }
+
+        // Вставляем контактную информацию в начало
+        binding.callLogsContainer?.addView(infoContainer, 0)
+    }
+
+    private fun updateCallLogs(callDetail: CallDetail) {
+        val searchResult = helper.searchPhone(callDetail.number)
+        val isCityCall = searchResult.startsWith("г.") &&
+                (!searchResult.contains("обл.") && !searchResult.contains("АО") && !searchResult.contains("округ"))
+
+        // Удаляем предыдущий журнал звонков, если он есть
+        binding.callLogsContainer?.findViewWithTag<View>("call_logs_tag")?.let {
+            binding.callLogsContainer?.removeView(it)
+        }
+
+        // Создаем контейнер для журнала звонков
+        val logsContainer = LinearLayout(context).apply {
+            tag = "call_logs_tag"
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        // Добавляем заголовок
+        val journalHeader = TextView(context).apply {
+            text = "Журнал звонков"
+            textSize = 20f
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(16, 16.dpToPx(), 8, 16.dpToPx())
+        }
+        logsContainer.addView(journalHeader)
+
+        val numbersToShow = if (callDetail.contactName != "Неизвестный") {
+            callDetail.allPhoneNumbers.distinct()
+        } else {
+            listOf(callDetail.number)
+        }
+
+        numbersToShow.forEach { number ->
+            val headerView = layoutInflater.inflate(
+                R.layout.item_call_log_header,
+                logsContainer,
+                false
+            ).apply {
+                findViewById<TextView>(R.id.phone_number).text =
+                    FormatPhoneNumber.formatPhoneNumber(number, isCityCall)
+
+                val headerContainer = findViewById<LinearLayout>(R.id.header_container)
+                val expandIcon = findViewById<ImageView>(R.id.expand_icon)
+                val detailsContainer = findViewById<LinearLayout>(R.id.call_details_container)
+
+                var isExpanded = true
+
+                headerContainer.setOnClickListener {
+                    isExpanded = !isExpanded
+                    if (isExpanded) {
+                        detailsContainer.visibility = View.VISIBLE
+                        val animation = AnimationUtils.loadAnimation(context, R.anim.fade_in)
+                        detailsContainer.startAnimation(animation)
+                        expandIcon.animate()
+                            .rotation(0f)
+                            .setDuration(300)
+                            .setInterpolator(DecelerateInterpolator())
+                            .start()
+                    } else {
+                        val animation = AnimationUtils.loadAnimation(context, R.anim.fade_out)
+                        animation.setAnimationListener(object : Animation.AnimationListener {
+                            override fun onAnimationStart(animation: Animation?) {}
+                            override fun onAnimationRepeat(animation: Animation?) {}
+                            override fun onAnimationEnd(animation: Animation?) {
+                                detailsContainer.visibility = View.GONE
+                            }
+                        })
+                        detailsContainer.startAnimation(animation)
+                        expandIcon.animate()
+                            .rotation(180f)
+                            .setDuration(300)
+                            .setInterpolator(DecelerateInterpolator())
+                            .start()
+                    }
                 }
 
-                val numberItem = layoutInflater.inflate(R.layout.detail_phone_number, numbersContainer, false).apply {
-                    findViewById<TextView>(R.id.phone_number).text = FormatPhoneNumber.formatPhoneNumber(number, isCityCall)
-                    findViewById<TextView>(R.id.call_source).text = callType
-                    findViewById<TextView>(R.id.place).text = searchResult
-
-                    findViewById<ImageButton>(R.id.call_button).setOnClickListener { makeCall(number) }
-                    findViewById<ImageButton>(R.id.sms_button).setOnClickListener { sendSms(number) }
-                }
-                numbersContainer.addView(numberItem)
-            }
-            binding.callLogsContainer?.addView(infoContainer)
-
-            val journalHeader = TextView(context).apply {
-                text = "Журнал звонков"
-                textSize = 20f
-                setTypeface(typeface, Typeface.BOLD)
-                setPadding(16, 16.dpToPx(), 8, 16.dpToPx())
-            }
-            binding.callLogsContainer?.addView(journalHeader)
-
-            val numbersToShow = if (callDetail.contactName != "Неизвестный") {
-                callDetail.allPhoneNumbers.distinct()
-            } else {
-                listOf(callDetail.number)
-            }
-
-            numbersToShow.forEach { number ->
-                val numberHeader = TextView(context).apply {
-                    text = FormatPhoneNumber.formatPhoneNumber(number, isCityCall)
-                    textSize = 16f
-                    setTypeface(typeface, Typeface.BOLD)
-                    setPadding(16, 16.dpToPx(), 8, 8.dpToPx())
-                }
-                binding.callLogsContainer?.addView(numberHeader)
-
-                callDetail.details.filter { it.number == number }
+                // Отображаем только существующие записи звонков
+                callDetail.details
+                    .filter { it.number == number }
                     .sortedByDescending { it.date }
                     .forEach { detail ->
-                        val callItemView = layoutInflater.inflate(R.layout.detail_callog, binding.callLogsContainer, false).apply {
+                        val callItemView = layoutInflater.inflate(
+                            R.layout.detail_callog,
+                            detailsContainer,
+                            false
+                        ).apply {
                             findViewById<ImageView>(R.id.call_type_icon).setImageDrawable(
                                 CallLogDataHelper.getCallTypeIcon(context, detail.type))
 
@@ -229,11 +480,16 @@ class ItemDetailFragment : Fragment() {
                             findViewById<TextView>(R.id.call_time).text = detail.timeString
                             findViewById<TextView>(R.id.call_duration).text = durationText
                         }
-                        binding.callLogsContainer?.addView(callItemView)
+                        detailsContainer.addView(callItemView)
                     }
             }
-        } ?: run { Log.e("ItemDetailFragment", "Call detail item is null") }
+            logsContainer.addView(headerView)
+        }
+
+        // Добавляем журнал звонков после контактной информации
+        binding.callLogsContainer?.addView(logsContainer)
     }
+
 
     private fun Int.dpToPx(): Int = (this * Resources.getSystem().displayMetrics.density).toInt()
 
@@ -291,10 +547,24 @@ class ItemDetailFragment : Fragment() {
         grantResults: IntArray
     ) {
         when (requestCode) {
+            REQUEST_WRITE_CALL_LOG_PERMISSION -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    item?.let { callDetail ->
+                        callDetail.allPhoneNumbers.firstOrNull()?.let { number ->
+                            deleteCallLogForNumber(number)
+                        }
+                    }
+                } else {
+                    Toast.makeText(
+                        context,
+                        "Для удаления звонков необходимо разрешение",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
             REQUEST_CONTACTS_PERMISSION -> {
                 if (grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
                     item?.let { callDetail ->
-                        // Повторно пытаемся сохранить после получения разрешений
                         CallLogDataHelper.setContactStarred(
                             requireContext(),
                             callDetail.number,
@@ -308,6 +578,9 @@ class ItemDetailFragment : Fragment() {
                         Toast.LENGTH_SHORT
                     ).show()
                 }
+            }
+            else -> {
+                // Обработка других permission request, если нужно
             }
         }
     }
@@ -332,10 +605,46 @@ class ItemDetailFragment : Fragment() {
         }
     }
 
+    private fun deleteCallLogForNumber(number: String) {
+        if (ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.WRITE_CALL_LOG
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(
+                arrayOf(Manifest.permission.WRITE_CALL_LOG),
+                REQUEST_WRITE_CALL_LOG_PERMISSION
+            )
+            return
+        }
+
+        // Сохраняем текущие данные перед удалением
+        val currentItem = item?.copy()
+
+        val deletedRows = CallLogDataHelper.deleteCallLogForNumber(requireContext(), number)
+        if (deletedRows > 0) {
+            // Обновляем данные
+            CallLogDataHelper.initializeItems(requireContext())
+
+            // Восстанавливаем исходные данные, но без удаленных записей
+            currentItem?.let {
+                item = it.copy(details = it.details.filter { it.number != number })
+                updateContent()
+            }
+
+            Toast.makeText(context, "Журнал звонков очищен", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     companion object {
         const val ARG_ITEM_ID = "item_id"
         const val ARG_ALL_NUMBERS = "all_numbers"
         private const val REQUEST_CALL_PHONE_PERMISSION = 101
         const val REQUEST_CONTACTS_PERMISSION = 102
+        const val REQUEST_WRITE_CALL_LOG_PERMISSION = 103
     }
+
+
 }
+
+

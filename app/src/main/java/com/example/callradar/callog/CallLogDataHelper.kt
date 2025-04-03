@@ -2,6 +2,7 @@ package com.example.callradar.callog
 
 import CallLogUpdate
 import android.content.ComponentName
+import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Handler
@@ -12,8 +13,10 @@ import java.util.*
 import kotlin.collections.HashMap
 import androidx.core.content.ContextCompat
 import android.graphics.drawable.Drawable
+import android.net.Uri
 import android.provider.ContactsContract
 import com.example.callradar.R
+import android.Manifest
 
 /**
  * Вспомогательный класс для работы с журналом звонков.
@@ -234,6 +237,136 @@ object CallLogDataHelper {
                     }
                 )
             }
+    }
+
+
+    /**
+     * Переключает статус "Избранного" для контакта
+     */
+    fun toggleContactStarredStatus(context: Context, phoneNumber: String, star: Boolean): Boolean {
+        return try {
+            val uri = Uri.withAppendedPath(
+                ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+                Uri.encode(phoneNumber))
+
+            val projection = arrayOf(ContactsContract.Contacts._ID)
+            val cursor = context.contentResolver.query(uri, projection, null, null, null)
+
+            var result = false
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    val contactId = it.getLong(0)
+                    val values = ContentValues().apply {
+                        put(ContactsContract.Contacts.STARRED, if (star) 1 else 0)
+                    }
+
+                    val rowsUpdated = context.contentResolver.update(
+                        ContactsContract.Contacts.CONTENT_URI,
+                        values,
+                        "${ContactsContract.Contacts._ID} = ?",
+                        arrayOf(contactId.toString()))
+
+                    result = rowsUpdated > 0
+                }
+            }
+            result
+        } catch (e: Exception) {
+            Log.e("CallLogHelper", "Error toggling starred status", e)
+            false
+        }
+    }
+
+    /**
+     * Проверяет, является ли контакт избранным
+     */
+    fun isContactStarred(context: Context, phoneNumber: String): Boolean {
+        return try {
+            val uri = Uri.withAppendedPath(
+                ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+                Uri.encode(phoneNumber))
+
+            val projection = arrayOf(ContactsContract.Contacts.STARRED)
+            val cursor = context.contentResolver.query(uri, projection, null, null, null)
+
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    return it.getInt(0) == 1
+                }
+            }
+            false
+        } catch (e: Exception) {
+            Log.e("CallLogHelper", "Error checking starred status", e)
+            false
+        }
+    }
+
+    /**
+     * Обновляет статус "Избранного" для контакта
+     */
+    fun setContactStarred(context: Context, phoneNumber: String, starred: Boolean): Boolean {
+        if (!hasContactsPermissions(context)) {
+            return false
+        }
+
+        return try {
+            val uri = Uri.withAppendedPath(
+                ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+                Uri.encode(phoneNumber))
+
+            val projection = arrayOf(ContactsContract.Contacts._ID)
+            var updated = false
+
+            context.contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val contactId = cursor.getLong(0)
+                    val values = ContentValues().apply {
+                        put(ContactsContract.Contacts.STARRED, if (starred) 1 else 0)
+                    }
+
+                    updated = context.contentResolver.update(
+                        ContactsContract.Contacts.CONTENT_URI,
+                        values,
+                        "${ContactsContract.Contacts._ID} = ?",
+                        arrayOf(contactId.toString())
+                    ) > 0
+                }
+            }
+            updated
+        } catch (e: Exception) {
+            Log.e("CallLogHelper", "Error setting starred status", e)
+            false
+        }
+    }
+
+    /**
+     * Проверяет разрешения для работы с контактами
+     */
+    fun hasContactsPermissions(context: Context): Boolean {
+        return ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CONTACTS) == PackageManager.PERMISSION_GRANTED
+    }
+
+
+    /**
+     * Получает URI контакта по номеру телефона
+     */
+    fun getContactUri(context: Context, phoneNumber: String): Uri? {
+        val uri = Uri.withAppendedPath(
+            ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+            Uri.encode(phoneNumber))
+
+        val projection = arrayOf(ContactsContract.Contacts._ID)
+        val cursor = context.contentResolver.query(uri, projection, null, null, null)
+
+        cursor?.use {
+            if (it.moveToFirst()) {
+                val contactId = it.getLong(0)
+                return Uri.withAppendedPath(
+                    ContactsContract.Contacts.CONTENT_URI,
+                    contactId.toString())
+            }
+        }
+        return null
     }
 
 

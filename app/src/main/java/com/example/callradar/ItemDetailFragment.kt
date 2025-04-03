@@ -3,6 +3,7 @@ package com.example.callradar
 import android.Manifest
 import com.example.callradar.utils.GetRegionFromNumber
 import android.content.ClipData
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Resources
@@ -36,6 +37,8 @@ class ItemDetailFragment : Fragment() {
     private var _binding: FragmentItemDetailBinding? = null
     private val binding get() = _binding!!
     private lateinit var helper: GetRegionFromNumber
+    private lateinit var favoriteIcon: ImageView
+    private var isFavorite: Boolean = false // Добавлено объявление переменной
 
     private val dragListener = View.OnDragListener { v, event ->
         if (event.action == DragEvent.ACTION_DROP) {
@@ -80,6 +83,71 @@ class ItemDetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         updateContent()
+
+        // Безопасный доступ к Toolbar через binding
+        binding.detailToolbar?.let { toolbar ->
+            favoriteIcon = toolbar.findViewById(R.id.favorite_icon)
+
+            item?.let { callDetail ->
+                // Проверяем статус избранного в системной адресной книге
+                isFavorite = CallLogDataHelper.isContactStarred(requireContext(), callDetail.number)
+                updateFavoriteIcon()
+
+                favoriteIcon.setOnClickListener {
+                    if (!CallLogDataHelper.hasContactsPermissions(requireContext())) {
+                        requestContactsPermissions()
+                        return@setOnClickListener
+                    }
+
+                    item?.let { callDetail ->
+                        isFavorite = !isFavorite
+                        updateFavoriteIcon()
+
+                        val success = CallLogDataHelper.setContactStarred(
+                            requireContext(),
+                            callDetail.number,
+                            isFavorite
+                        )
+
+                        if (!success) {
+                            Toast.makeText(
+                                context,
+                                "Не удалось обновить контакт",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            // Откатываем изменения, если не удалось сохранить
+                            isFavorite = !isFavorite
+                            updateFavoriteIcon()
+                        } else {
+                            // Анимация при успешном сохранении
+                            favoriteIcon.animate().scaleX(1.2f).scaleY(1.2f).setDuration(200)
+                                .withEndAction {
+                                    favoriteIcon.animate().scaleX(1f).scaleY(1f).setDuration(200)
+                                        .start()
+                                }.start()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun updateFavoriteIcon() {
+        favoriteIcon.setImageResource(
+            if (isFavorite) R.drawable.ic_favorite else R.drawable.ic_favorite_border
+        )
+        favoriteIcon.setColorFilter(
+            ContextCompat.getColor(
+                requireContext(),
+                if (isFavorite) R.color.missed_call_primary else R.color.text_primary
+            )
+        )
+    }
+
+
+    private fun isContactFavorite(phoneNumber: String): Boolean {
+        val prefs = requireContext().getSharedPreferences("favorites", Context.MODE_PRIVATE)
+        return prefs.getBoolean(phoneNumber, false)
     }
 
     private fun updateContent() {
@@ -196,9 +264,78 @@ class ItemDetailFragment : Fragment() {
         _binding = null
     }
 
+    private fun checkContactsPermissions(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.READ_CONTACTS
+        ) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(
+                    requireContext(),
+                    Manifest.permission.WRITE_CONTACTS
+                ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun requestContactsPermissions() {
+        requestPermissions(
+            arrayOf(
+                Manifest.permission.READ_CONTACTS,
+                Manifest.permission.WRITE_CONTACTS
+            ),
+            REQUEST_CONTACTS_PERMISSION
+        )
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        when (requestCode) {
+            REQUEST_CONTACTS_PERMISSION -> {
+                if (grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
+                    item?.let { callDetail ->
+                        // Повторно пытаемся сохранить после получения разрешений
+                        CallLogDataHelper.setContactStarred(
+                            requireContext(),
+                            callDetail.number,
+                            isFavorite
+                        )
+                    }
+                } else {
+                    Toast.makeText(
+                        context,
+                        "Разрешения не предоставлены, изменения не сохранены в контактах",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
+    }
+
+    private fun toggleFavoriteStatus(phoneNumber: String) {
+        val newFavoriteState = !isFavorite
+        isFavorite = newFavoriteState
+        updateFavoriteIcon()
+
+        // Сохраняем в SharedPreferences
+        val prefs = requireContext().getSharedPreferences("favorites", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(phoneNumber, newFavoriteState).apply()
+
+        // Пытаемся сохранить в системных контактах
+        if (CallLogDataHelper.hasContactsPermissions(requireContext())) {
+            val success = CallLogDataHelper.setContactStarred(requireContext(), phoneNumber, newFavoriteState)
+            if (!success) {
+                Toast.makeText(context, "Не удалось обновить контакт", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            requestContactsPermissions()
+        }
+    }
+
     companion object {
         const val ARG_ITEM_ID = "item_id"
         const val ARG_ALL_NUMBERS = "all_numbers"
         private const val REQUEST_CALL_PHONE_PERMISSION = 101
+        const val REQUEST_CONTACTS_PERMISSION = 102
     }
 }

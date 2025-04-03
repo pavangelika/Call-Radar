@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools">
     <!-- разрешения для доступа к состоянию звонков, контактам и отображению поверх других приложений: -->
     <uses-permission android:name="android.permission.READ_CALL_LOG" /> <!-- журнал звонков -->
+    <uses-permission android:name="android.permission.WRITE_CALL_LOG" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" /> <!-- для получения состояния звонков (входящий, исходящий, завершенный) -->
     <uses-permission android:name="android.permission.READ_CONTACTS" /> <!-- для отображения информации о контактах -->
     <uses-permission android:name="android.permission.WRITE_CONTACTS" />

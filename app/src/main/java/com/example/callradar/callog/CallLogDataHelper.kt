@@ -96,7 +96,7 @@ object CallLogDataHelper {
     /**
      * Определяет название приложения или SIM-карты по идентификатору компонента.
      */
-    fun getAppNameFromComponent(context: Context, componentName: String?): String? {
+    private fun getAppNameFromComponent(context: Context, componentName: String?): String? {
         if (componentName.isNullOrEmpty()) return null
 
         return try {
@@ -120,8 +120,13 @@ object CallLogDataHelper {
                 ContactsContract.CommonDataKinds.Phone.NUMBER
             )
 
-            val selection = "${ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME} = ?"
-            val selectionArgs = arrayOf(contactName)
+            // First get the contact ID by name
+            val contactId = getContactIdByName(context, contactName)
+            if (contactId == null) return emptyList()
+
+            // Then get all numbers for this contact ID
+            val selection = "${ContactsContract.CommonDataKinds.Phone.CONTACT_ID} = ?"
+            val selectionArgs = arrayOf(contactId)
 
             context.contentResolver.query(
                 uri,
@@ -132,7 +137,9 @@ object CallLogDataHelper {
             )?.use { cursor ->
                 val numberIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
                 while (cursor.moveToNext()) {
-                    cursor.getString(numberIndex)?.let { phones.add(it) }
+                    cursor.getString(numberIndex)?.let { number ->
+                        phones.add(number.replace("[^+0-9]".toRegex(), ""))
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -142,6 +149,24 @@ object CallLogDataHelper {
         return phones.distinct()
     }
 
+    private fun getContactIdByName(context: Context, contactName: String): String? {
+        val uri = ContactsContract.Contacts.CONTENT_URI
+        val projection = arrayOf(ContactsContract.Contacts._ID)
+        val selection = "${ContactsContract.Contacts.DISPLAY_NAME_PRIMARY} = ?"
+        val selectionArgs = arrayOf(contactName)
+
+        return context.contentResolver.query(
+            uri,
+            projection,
+            selection,
+            selectionArgs,
+            null
+        )?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                cursor.getString(0)
+            } else null
+        }
+    }
 
     /**
      * Возвращает описание типа звонка.
@@ -172,9 +197,9 @@ object CallLogDataHelper {
     /**
      * Форматирование даты в разные форматы.
      */
-    fun formatDateddMMyyyy(date: Long): String = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date(date))
-    fun formatDateTime(date: Long): String = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(date))
-    fun formatDateFull(date: Long): String = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(Date(date))
+    private fun formatDateddMMyyyy(date: Long): String = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date(date))
+    private fun formatDateTime(date: Long): String = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(date))
+    private fun formatDateFull(date: Long): String = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(Date(date))
 
     /**
      * Группировка звонков по номеру и дате.
@@ -203,78 +228,6 @@ object CallLogDataHelper {
             }
     }
 
-    /**
-     * Формирование детализированных данных по звонкам.
-     */
-    fun callDetails(context: Context, callLogs: List<CallLogEntry>): List<CallDetail> {
-        val dateFormatter = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
-        val timeFormatter = SimpleDateFormat("HH:mm", Locale.getDefault())
-
-        return callLogs
-            .groupBy { it.number }  // Группируем по номеру, а не по имени
-            .map { (number, group) ->
-                val contactName = group.first().contactName
-                val allNumbers = if (contactName != "Неизвестный") {
-                    getContactPhoneNumbers(context, contactName)
-                } else {
-                    listOf(number)  // Для неизвестных - только текущий номер
-                }
-
-                CallDetail(
-                    number = number,
-                    contactName = contactName,
-                    allPhoneNumbers = allNumbers,
-                    details = group.map {
-                        Detail(
-                            number = number,
-                            type = it.type,
-                            date = it.date,  // Используем исходный timestamp
-                            dateString = dateFormatter.format(Date(it.date)),
-                            timeString = timeFormatter.format(Date(it.date)),
-                            duration = it.duration,
-                            accountApp = it.accountApp
-                        )
-                    }
-                )
-            }
-    }
-
-
-    /**
-     * Переключает статус "Избранного" для контакта
-     */
-    fun toggleContactStarredStatus(context: Context, phoneNumber: String, star: Boolean): Boolean {
-        return try {
-            val uri = Uri.withAppendedPath(
-                ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
-                Uri.encode(phoneNumber))
-
-            val projection = arrayOf(ContactsContract.Contacts._ID)
-            val cursor = context.contentResolver.query(uri, projection, null, null, null)
-
-            var result = false
-            cursor?.use {
-                if (it.moveToFirst()) {
-                    val contactId = it.getLong(0)
-                    val values = ContentValues().apply {
-                        put(ContactsContract.Contacts.STARRED, if (star) 1 else 0)
-                    }
-
-                    val rowsUpdated = context.contentResolver.update(
-                        ContactsContract.Contacts.CONTENT_URI,
-                        values,
-                        "${ContactsContract.Contacts._ID} = ?",
-                        arrayOf(contactId.toString()))
-
-                    result = rowsUpdated > 0
-                }
-            }
-            result
-        } catch (e: Exception) {
-            Log.e("CallLogHelper", "Error toggling starred status", e)
-            false
-        }
-    }
 
     /**
      * Проверяет, является ли контакт избранным
@@ -346,29 +299,6 @@ object CallLogDataHelper {
                 ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CONTACTS) == PackageManager.PERMISSION_GRANTED
     }
 
-
-    /**
-     * Получает URI контакта по номеру телефона
-     */
-    fun getContactUri(context: Context, phoneNumber: String): Uri? {
-        val uri = Uri.withAppendedPath(
-            ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
-            Uri.encode(phoneNumber))
-
-        val projection = arrayOf(ContactsContract.Contacts._ID)
-        val cursor = context.contentResolver.query(uri, projection, null, null, null)
-
-        cursor?.use {
-            if (it.moveToFirst()) {
-                val contactId = it.getLong(0)
-                return Uri.withAppendedPath(
-                    ContactsContract.Contacts.CONTENT_URI,
-                    contactId.toString())
-            }
-        }
-        return null
-    }
-
     fun deleteCallLogForNumber(context: Context, number: String): Int {
         return try {
             context.contentResolver.delete(
@@ -390,35 +320,82 @@ object CallLogDataHelper {
         ITEMS.clear()
         ITEM_MAP.clear()
 
+        // Get all call logs
         val callLogs = fetchCallLogs(context)
+
+        // Group logs by contact name (for known contacts) or by number (for unknown)
         val groupedLogs = groupCallLogs(callLogs)
 
+        // First pass - collect all contact names and their numbers
+        val contactNumbersMap = mutableMapOf<String, List<String>>()
+        groupedLogs.filter { it.contactName != "Неизвестный" }.forEach { log ->
+            if (!contactNumbersMap.containsKey(log.contactName)) {
+                contactNumbersMap[log.contactName] = getContactPhoneNumbers(context, log.contactName)
+            }
+        }
+
+        // Second pass - create CallDetail objects
         groupedLogs.forEach { log ->
+            val allNumbers = if (log.contactName != "Неизвестный") {
+                contactNumbersMap[log.contactName] ?: listOf(log.number)
+            } else {
+                log.allNumbers
+            }
+
+            // Get all call details for these numbers
             val details = callLogs
-                .filter { log.allNumbers.contains(it.number) } // Фильтруем по всем номерам контакта
+                .filter { call -> allNumbers.contains(call.number) }
                 .map {
                     Detail(
                         number = it.number,
                         type = it.type,
-                        date = it.date,  // Используем исходный timestamp
+                        date = it.date,
                         dateString = formatDateddMMyyyy(it.date),
                         timeString = formatDateTime(it.date),
                         duration = it.duration,
                         accountApp = it.accountApp
                     )
                 }
+                .sortedByDescending { it.date }
 
+            // Create CallDetail
             val detail = CallDetail(
                 number = log.number,
                 contactName = log.contactName,
-                allPhoneNumbers = log.allNumbers,
+                allPhoneNumbers = allNumbers.distinct(),
                 details = details
             )
 
             ITEMS.add(detail)
-            // Добавляем в карту по всем номерам контакта
-            log.allNumbers.forEach { number ->
+
+            // Map all numbers to this detail
+            allNumbers.forEach { number ->
                 ITEM_MAP[number] = detail
+            }
+        }
+
+        // Add contacts that exist in address book but not in call log
+        addContactsMissingInCallLog(context, contactNumbersMap)
+    }
+
+    private fun addContactsMissingInCallLog(context: Context, allContactsNumbers: Map<String, List<String>>) {
+        allContactsNumbers.forEach { (contactName, numbers) ->
+            // Проверяем, есть ли уже этот контакт в ITEMS
+            val exists = ITEMS.any { it.contactName == contactName }
+
+            if (!exists) {
+                // Создаем пустой объект для контакта без звонков
+                val detail = CallDetail(
+                    number = numbers.firstOrNull() ?: "",
+                    contactName = contactName,
+                    allPhoneNumbers = numbers,
+                    details = emptyList()
+                )
+
+                ITEMS.add(detail)
+                numbers.forEach { number ->
+                    ITEM_MAP[number] = detail
+                }
             }
         }
     }

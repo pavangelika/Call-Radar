@@ -1,9 +1,10 @@
 package com.example.callradar.callog
 
 /**
- * Модели данных для работы с журналом звонков.
+ * Модели данных для работы с журналом звонков и контактами
  */
 
+// Модель для записи в журнале звонков
 data class CallLogEntry(
     val number: String,
     val type: Int,
@@ -13,6 +14,8 @@ data class CallLogEntry(
     val accountApp: String
 )
 
+
+// Модель для группировки звонков по контакту/номеру
 data class GroupedCallLog(
     val type: Int,
     val number: String,
@@ -39,3 +42,6 @@ data class Detail(
     val duration: Long,
     val accountApp: String
 )
+
+
+

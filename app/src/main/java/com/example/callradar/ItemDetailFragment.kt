@@ -1,5 +1,6 @@
 package com.example.callradar
 
+import FormatPhoneNumber
 import android.Manifest
 import android.app.AlertDialog
 import android.content.ClipData
@@ -125,7 +126,8 @@ class ItemDetailFragment : Fragment() {
         item?.let { callDetail ->
             val contactInfo = if (callDetail.contactName != "Неизвестный") {
                 // Для известных контактов получаем полную информацию
-                val contactID = CallLogDataHelper.findContactIdByName(requireContext(), callDetail.contactName)
+                val contactID =
+                    CallLogDataHelper.findContactIdByName(requireContext(), callDetail.contactName)
                 CallLogDataHelper.readFullContactInfo(requireContext(), contactID!!)
             } else {
                 // Для неизвестных создаем минимальную ContactInfo
@@ -133,7 +135,7 @@ class ItemDetailFragment : Fragment() {
                     displayName = "Неизвестный",
                     phoneNumbers = listOf(
                         PhoneNumberInfo(
-                            number = callDetail.number,
+                            number = normalizePhoneNumber(callDetail.number),
                             type = ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE
                         )
                     )
@@ -198,29 +200,40 @@ class ItemDetailFragment : Fragment() {
 
             val searchResult = helper.searchPhone(item!!.number)
             val isCityCall = searchResult.startsWith("г.") &&
-                    (!searchResult.contains("обл.") && !searchResult.contains("АО") && !searchResult.contains("округ"))
+                    (!searchResult.contains("обл.") && !searchResult.contains("АО") && !searchResult.contains(
+                        "округ"
+                    ))
 
-// 1. Получаем номера в порядке приоритета
+            // 1. Получаем номера в порядке приоритета
+
+// Модифицируйте получение номеров:
             val numbersToShow = when {
-                // Если есть номера в контакте
                 !contactInfo.phoneNumbers.isNullOrEmpty() -> {
-                    contactInfo.phoneNumbers.mapNotNull { it.number }
+                    contactInfo.phoneNumbers.mapNotNull {
+                        normalizePhoneNumber(it.number) // Нормализуем номера из контакта
+                    }
                 }
-                // Если есть номера в журнале вызовов
+
                 !item?.allPhoneNumbers.isNullOrEmpty() -> {
-                    item!!.allPhoneNumbers
+                    item!!.allPhoneNumbers.map {
+                        normalizePhoneNumber(it) // Нормализуем номера из журнала
+                    }
                 }
-                // Используем основной номер как крайний вариант
+
                 item?.number != null -> {
-                    listOf(item!!.number)
+                    listOf(normalizePhoneNumber(item!!.number)) // Нормализуем основной номер
                 }
+
                 else -> {
                     Log.e("ContactInfo", "Не найдено ни одного номера")
                     return
                 }
             }.distinct()
 
-            Log.d("ContactInfo", "Номера для отображения (${numbersToShow.size}): ${numbersToShow.joinToString()}")
+            Log.d(
+                "ContactInfo",
+                "Номера для отображения (${numbersToShow.size}): ${numbersToShow.joinToString()}"
+            )
 
 // 2. Определяем основной номер для отображения
             val mainNumber = when {
@@ -232,8 +245,13 @@ class ItemDetailFragment : Fragment() {
             Log.d("ContactInfo", "MainNumber - ${mainNumber.toString()}")
 // 3. Определяем отображаемое имя в заголовке
             val displayName = when {
-                item?.contactName == "Неизвестный" -> FormatPhoneNumber.formatPhoneNumber(mainNumber.toString(), isCityCall)
-                else -> contactInfo.displayName }
+                item?.contactName == "Неизвестный" -> FormatPhoneNumber.formatPhoneNumber(
+                    mainNumber.toString(),
+                    isCityCall
+                )
+
+                else -> contactInfo.displayName
+            }
 
             binding.toolbarLayout?.title = displayName
             Log.d("ContactInfo", displayName)
@@ -246,15 +264,16 @@ class ItemDetailFragment : Fragment() {
                     R.layout.detail_contact_info_block, this, false
                 ).apply { tag = "contact_info_tag" }
 
-                val numbersContainer = infoContainer.findViewById<LinearLayout>(R.id.numbers_container)
-                    ?: return@apply
+                val numbersContainer =
+                    infoContainer.findViewById<LinearLayout>(R.id.numbers_container)
+                        ?: return@apply
 
                 numbersContainer.removeAllViews()
 
-                numbersToShow.forEachIndexed {index, number ->
+                numbersToShow.forEachIndexed { index, number ->
                     Log.d("ContactInfo", "numbersToShow ${number}")
                     val searchPlace = helper.searchPhone(item!!.number)
-                    try{
+                    try {
 
                         val numberItem = layoutInflater.inflate(
                             R.layout.detail_phone_number, numbersContainer, false
@@ -314,286 +333,299 @@ class ItemDetailFragment : Fragment() {
         }
     }
 
-private fun updateCallLogs(callDetail: CallDetail) {
-    val searchResult = helper.searchPhone(callDetail.number)
-    val isCityCall = searchResult.startsWith("г.") &&
-            (!searchResult.contains("обл.") && !searchResult.contains("АО") && !searchResult.contains(
-                "округ"
-            ))
+    private fun updateCallLogs(callDetail: CallDetail) {
+        val searchResult = helper.searchPhone(callDetail.number)
+        val isCityCall = searchResult.startsWith("г.") &&
+                (!searchResult.contains("обл.") && !searchResult.contains("АО") && !searchResult.contains(
+                    "округ"
+                ))
 
-    binding.callLogsContainer?.findViewWithTag<View>("call_logs_tag")?.let {
-        binding.callLogsContainer?.removeView(it)
+        binding.callLogsContainer?.findViewWithTag<View>("call_logs_tag")?.let {
+            binding.callLogsContainer?.removeView(it)
+        }
+
+        val logsContainer = LinearLayout(context).apply {
+            tag = "call_logs_tag"
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        val journalHeader = TextView(context).apply {
+            text = "Журнал звонков"
+            textSize = 20f
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(16, 16.dpToPx(), 8, 16.dpToPx())
+        }
+        logsContainer.addView(journalHeader)
+
+        val numbersToShow = if (callDetail.contactName != "Неизвестный") {
+            callDetail.allPhoneNumbers.distinct()
+        } else {
+            listOf(callDetail.number)
+        }
+
+        numbersToShow.forEach { number ->
+            val headerView = layoutInflater.inflate(
+                R.layout.detail_calllog_header,
+                logsContainer,
+                false
+            ).apply {
+                findViewById<TextView>(R.id.phone_number).text =
+                    FormatPhoneNumber.formatPhoneNumber(number, isCityCall)
+
+                val headerContainer = findViewById<LinearLayout>(R.id.header_container)
+                val expandIcon = findViewById<ImageView>(R.id.expand_icon)
+                val detailsContainer = findViewById<LinearLayout>(R.id.call_details_container)
+
+                var isExpanded = true
+
+                findViewById<TextView>(R.id.phone_number).setOnLongClickListener {
+                    showDeleteCallLogDialog(number)
+                    true
+                }
+
+                headerContainer.setOnClickListener {
+                    isExpanded = !isExpanded
+                    if (isExpanded) {
+                        detailsContainer.visibility = View.VISIBLE
+                        val animation = AnimationUtils.loadAnimation(context, R.anim.fade_in)
+                        detailsContainer.startAnimation(animation)
+                        expandIcon.animate()
+                            .rotation(0f)
+                            .setDuration(300)
+                            .setInterpolator(DecelerateInterpolator())
+                            .start()
+                    } else {
+                        val animation = AnimationUtils.loadAnimation(context, R.anim.fade_out)
+                        animation.setAnimationListener(object : Animation.AnimationListener {
+                            override fun onAnimationStart(animation: Animation?) {}
+                            override fun onAnimationRepeat(animation: Animation?) {}
+                            override fun onAnimationEnd(animation: Animation?) {
+                                detailsContainer.visibility = View.GONE
+                            }
+                        })
+                        detailsContainer.startAnimation(animation)
+                        expandIcon.animate()
+                            .rotation(180f)
+                            .setDuration(300)
+                            .setInterpolator(DecelerateInterpolator())
+                            .start()
+                    }
+                }
+
+                callDetail.details
+                    .filter { it.number == number }
+                    .sortedByDescending { it.date }
+                    .forEach { detail ->
+                        val callItemView = layoutInflater.inflate(
+                            R.layout.detail_callog,
+                            detailsContainer,
+                            false
+                        ).apply {
+                            findViewById<ImageView>(R.id.call_type_icon).setImageDrawable(
+                                CallLogDataHelper.getCallTypeIcon(context, detail.type)
+                            )
+
+                            val durationText = when {
+                                detail.duration >= 3600 -> "${detail.duration / 3600} ч ${(detail.duration % 3600) / 60} мин"
+                                detail.duration >= 60 -> "${detail.duration / 60} мин"
+                                else -> "${detail.duration} сек"
+                            }
+
+                            findViewById<TextView>(R.id.call_date).text = detail.dateString
+                            findViewById<TextView>(R.id.call_time).text = detail.timeString
+                            findViewById<TextView>(R.id.call_duration).text = durationText
+                        }
+                        detailsContainer.addView(callItemView)
+                    }
+            }
+            logsContainer.addView(headerView)
+        }
+
+        binding.callLogsContainer?.addView(logsContainer)
     }
 
-    val logsContainer = LinearLayout(context).apply {
-        tag = "call_logs_tag"
-        orientation = LinearLayout.VERTICAL
-        layoutParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
+    private fun Int.dpToPx(): Int = (this * Resources.getSystem().displayMetrics.density).toInt()
+
+    private fun makeCall(number: String) {
+        if (ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.CALL_PHONE
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            startActivity(Intent(Intent.ACTION_CALL).apply {
+                data = Uri.parse("tel:$number")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            })
+        } else {
+            requestPermissions(
+                arrayOf(Manifest.permission.CALL_PHONE),
+                REQUEST_CALL_PHONE_PERMISSION
+            )
+        }
+    }
+
+    private fun sendSms(number: String) {
+        try {
+            startActivity(Intent(Intent.ACTION_SENDTO).apply {
+                data = Uri.parse("smsto:$number")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            })
+        } catch (e: Exception) {
+            Toast.makeText(context, "Не удалось открыть приложение сообщений", Toast.LENGTH_SHORT)
+                .show()
+        }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+
+    private fun requestContactsPermissions() {
+        requestPermissions(
+            arrayOf(
+                Manifest.permission.READ_CONTACTS,
+                Manifest.permission.WRITE_CONTACTS
+            ),
+            REQUEST_CONTACTS_PERMISSION
         )
     }
 
-    val journalHeader = TextView(context).apply {
-        text = "Журнал звонков"
-        textSize = 20f
-        setTypeface(typeface, Typeface.BOLD)
-        setPadding(16, 16.dpToPx(), 8, 16.dpToPx())
-    }
-    logsContainer.addView(journalHeader)
-
-    val numbersToShow = if (callDetail.contactName != "Неизвестный") {
-        callDetail.allPhoneNumbers.distinct()
-    } else {
-        listOf(callDetail.number)
-    }
-
-    numbersToShow.forEach { number ->
-        val headerView = layoutInflater.inflate(
-            R.layout.detail_calllog_header,
-            logsContainer,
-            false
-        ).apply {
-            findViewById<TextView>(R.id.phone_number).text =
-                FormatPhoneNumber.formatPhoneNumber(number, isCityCall)
-
-            val headerContainer = findViewById<LinearLayout>(R.id.header_container)
-            val expandIcon = findViewById<ImageView>(R.id.expand_icon)
-            val detailsContainer = findViewById<LinearLayout>(R.id.call_details_container)
-
-            var isExpanded = true
-
-            findViewById<TextView>(R.id.phone_number).setOnLongClickListener {
-                showDeleteCallLogDialog(number)
-                true
-            }
-
-            headerContainer.setOnClickListener {
-                isExpanded = !isExpanded
-                if (isExpanded) {
-                    detailsContainer.visibility = View.VISIBLE
-                    val animation = AnimationUtils.loadAnimation(context, R.anim.fade_in)
-                    detailsContainer.startAnimation(animation)
-                    expandIcon.animate()
-                        .rotation(0f)
-                        .setDuration(300)
-                        .setInterpolator(DecelerateInterpolator())
-                        .start()
-                } else {
-                    val animation = AnimationUtils.loadAnimation(context, R.anim.fade_out)
-                    animation.setAnimationListener(object : Animation.AnimationListener {
-                        override fun onAnimationStart(animation: Animation?) {}
-                        override fun onAnimationRepeat(animation: Animation?) {}
-                        override fun onAnimationEnd(animation: Animation?) {
-                            detailsContainer.visibility = View.GONE
-                        }
-                    })
-                    detailsContainer.startAnimation(animation)
-                    expandIcon.animate()
-                        .rotation(180f)
-                        .setDuration(300)
-                        .setInterpolator(DecelerateInterpolator())
-                        .start()
-                }
-            }
-
-            callDetail.details
-                .filter { it.number == number }
-                .sortedByDescending { it.date }
-                .forEach { detail ->
-                    val callItemView = layoutInflater.inflate(
-                        R.layout.detail_callog,
-                        detailsContainer,
-                        false
-                    ).apply {
-                        findViewById<ImageView>(R.id.call_type_icon).setImageDrawable(
-                            CallLogDataHelper.getCallTypeIcon(context, detail.type)
-                        )
-
-                        val durationText = when {
-                            detail.duration >= 3600 -> "${detail.duration / 3600} ч ${(detail.duration % 3600) / 60} мин"
-                            detail.duration >= 60 -> "${detail.duration / 60} мин"
-                            else -> "${detail.duration} сек"
-                        }
-
-                        findViewById<TextView>(R.id.call_date).text = detail.dateString
-                        findViewById<TextView>(R.id.call_time).text = detail.timeString
-                        findViewById<TextView>(R.id.call_duration).text = durationText
-                    }
-                    detailsContainer.addView(callItemView)
-                }
-        }
-        logsContainer.addView(headerView)
-    }
-
-    binding.callLogsContainer?.addView(logsContainer)
-}
-
-private fun Int.dpToPx(): Int = (this * Resources.getSystem().displayMetrics.density).toInt()
-
-private fun makeCall(number: String) {
-    if (ContextCompat.checkSelfPermission(
-            requireContext(),
-            Manifest.permission.CALL_PHONE
-        ) == PackageManager.PERMISSION_GRANTED
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
     ) {
-        startActivity(Intent(Intent.ACTION_CALL).apply {
-            data = Uri.parse("tel:$number")
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        })
-    } else {
-        requestPermissions(arrayOf(Manifest.permission.CALL_PHONE), REQUEST_CALL_PHONE_PERMISSION)
-    }
-}
+        when (requestCode) {
+            REQUEST_WRITE_CALL_LOG_PERMISSION -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    item?.let { callDetail ->
+                        callDetail.allPhoneNumbers.firstOrNull()?.let { number ->
+                            deleteCallLogForNumber(number)
+                        }
+                    }
+                } else {
+                    Toast.makeText(
+                        context,
+                        "Для удаления звонков необходимо разрешение",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
 
-private fun sendSms(number: String) {
-    try {
-        startActivity(Intent(Intent.ACTION_SENDTO).apply {
-            data = Uri.parse("smsto:$number")
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        })
-    } catch (e: Exception) {
-        Toast.makeText(context, "Не удалось открыть приложение сообщений", Toast.LENGTH_SHORT)
+            REQUEST_CONTACTS_PERMISSION -> {
+                if (grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
+                    item?.let { callDetail ->
+                        CallLogDataHelper.setContactStarred(
+                            requireContext(),
+                            callDetail.number,
+                            isFavorite
+                        )
+                    }
+                } else {
+                    Toast.makeText(
+                        context,
+                        "Разрешения не предоставлены, изменения не сохранены в контактах",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
+    }
+
+    private fun showDeleteCallLogDialog(number: String) {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Удалить журнал звонков")
+            .setMessage(
+                "Вы уверены, что хотите удалить все звонки для номера ${
+                    FormatPhoneNumber.formatPhoneNumber(
+                        number,
+                        false
+                    )
+                }?"
+            )
+            .setPositiveButton("Удалить") { _, _ ->
+                deleteCallLogForNumber(number)
+            }
+            .setNegativeButton("Отмена", null)
             .show()
     }
-}
 
-override fun onDestroyView() {
-    super.onDestroyView()
-    _binding = null
-}
-
-private fun requestContactsPermissions() {
-    requestPermissions(
-        arrayOf(
-            Manifest.permission.READ_CONTACTS,
-            Manifest.permission.WRITE_CONTACTS
-        ),
-        REQUEST_CONTACTS_PERMISSION
-    )
-}
-
-override fun onRequestPermissionsResult(
-    requestCode: Int,
-    permissions: Array<out String>,
-    grantResults: IntArray
-) {
-    when (requestCode) {
-        REQUEST_WRITE_CALL_LOG_PERMISSION -> {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                item?.let { callDetail ->
-                    callDetail.allPhoneNumbers.firstOrNull()?.let { number ->
-                        deleteCallLogForNumber(number)
-                    }
-                }
-            } else {
-                Toast.makeText(
-                    context,
-                    "Для удаления звонков необходимо разрешение",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-
-        REQUEST_CONTACTS_PERMISSION -> {
-            if (grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-                item?.let { callDetail ->
-                    CallLogDataHelper.setContactStarred(
-                        requireContext(),
-                        callDetail.number,
-                        isFavorite
-                    )
-                }
-            } else {
-                Toast.makeText(
-                    context,
-                    "Разрешения не предоставлены, изменения не сохранены в контактах",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-    }
-}
-
-private fun showDeleteCallLogDialog(number: String) {
-    AlertDialog.Builder(requireContext())
-        .setTitle("Удалить журнал звонков")
-        .setMessage(
-            "Вы уверены, что хотите удалить все звонки для номера ${
-                FormatPhoneNumber.formatPhoneNumber(
-                    number,
-                    false
-                )
-            }?"
-        )
-        .setPositiveButton("Удалить") { _, _ ->
-            deleteCallLogForNumber(number)
-        }
-        .setNegativeButton("Отмена", null)
-        .show()
-}
-
-private fun toggleFavoriteStatus(phoneNumber: String) {
-    isFavorite = !isFavorite
-    updateFavoriteIcon()
-
-    val success = CallLogDataHelper.setContactStarred(
-        requireContext(),
-        phoneNumber,
-        isFavorite
-    )
-
-    if (!success) {
-        Toast.makeText(
-            context,
-            "Не удалось обновить контакт",
-            Toast.LENGTH_SHORT
-        ).show()
+    private fun toggleFavoriteStatus(phoneNumber: String) {
         isFavorite = !isFavorite
         updateFavoriteIcon()
-    } else {
-        favoriteIcon.animate().scaleX(1.2f).scaleY(1.2f).setDuration(200)
-            .withEndAction {
-                favoriteIcon.animate().scaleX(1f).scaleY(1f).setDuration(200)
-                    .start()
-            }.start()
-    }
-}
 
-private fun deleteCallLogForNumber(number: String) {
-    if (ContextCompat.checkSelfPermission(
+        val success = CallLogDataHelper.setContactStarred(
             requireContext(),
-            Manifest.permission.WRITE_CALL_LOG
-        ) != PackageManager.PERMISSION_GRANTED
-    ) {
-        requestPermissions(
-            arrayOf(Manifest.permission.WRITE_CALL_LOG),
-            REQUEST_WRITE_CALL_LOG_PERMISSION
+            phoneNumber,
+            isFavorite
         )
-        return
+
+        if (!success) {
+            Toast.makeText(
+                context,
+                "Не удалось обновить контакт",
+                Toast.LENGTH_SHORT
+            ).show()
+            isFavorite = !isFavorite
+            updateFavoriteIcon()
+        } else {
+            favoriteIcon.animate().scaleX(1.2f).scaleY(1.2f).setDuration(200)
+                .withEndAction {
+                    favoriteIcon.animate().scaleX(1f).scaleY(1f).setDuration(200)
+                        .start()
+                }.start()
+        }
     }
 
-    val deletedRows = CallLogDataHelper.deleteCallLogForNumber(requireContext(), number)
-    if (deletedRows > 0) {
-        CallLogDataHelper.initializeItems(requireContext())
-        val updatedItem = CallLogDataHelper.ITEM_MAP[number]
-            ?: CallLogDataHelper.ITEM_MAP.values.firstOrNull { it.allPhoneNumbers.contains(number) }
-        item = updatedItem
-        updateContent()
-        Toast.makeText(context, "Журнал звонков очищен", Toast.LENGTH_SHORT).show()
-
-        // как перейти обратно в itemlistfragment
-
-    } else {
-        Toast.makeText(context, "Не удалось удалить записи", Toast.LENGTH_SHORT).show()
+    private fun normalizePhoneNumber(number: String): String {
+        return number.replace("[^0-9+]".toRegex(), "")
+            .replace("^8".toRegex(), "8") // Российские номера
+            .replace("^7".toRegex(), "+7") // Уже международный
     }
-}
 
-companion object {
-    const val ARG_ITEM_ID = "item_id"
-    const val ARG_ALL_NUMBERS = "all_numbers"
-    private const val REQUEST_CALL_PHONE_PERMISSION = 101
-    const val REQUEST_CONTACTS_PERMISSION = 102
-    const val REQUEST_WRITE_CALL_LOG_PERMISSION = 103
-}
+    private fun deleteCallLogForNumber(number: String) {
+        if (ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.WRITE_CALL_LOG
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(
+                arrayOf(Manifest.permission.WRITE_CALL_LOG),
+                REQUEST_WRITE_CALL_LOG_PERMISSION
+            )
+            return
+        }
+
+        val deletedRows = CallLogDataHelper.deleteCallLogForNumber(requireContext(), number)
+        if (deletedRows > 0) {
+            CallLogDataHelper.initializeItems(requireContext())
+            val updatedItem = CallLogDataHelper.ITEM_MAP[number]
+                ?: CallLogDataHelper.ITEM_MAP.values.firstOrNull {
+                    it.allPhoneNumbers.contains(
+                        number
+                    )
+                }
+            item = updatedItem
+            updateContent()
+            Toast.makeText(context, "Журнал звонков очищен", Toast.LENGTH_SHORT).show()
+
+            // как перейти обратно в itemlistfragment
+
+        } else {
+            Toast.makeText(context, "Не удалось удалить записи", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    companion object {
+        const val ARG_ITEM_ID = "item_id"
+        const val ARG_ALL_NUMBERS = "all_numbers"
+        private const val REQUEST_CALL_PHONE_PERMISSION = 101
+        const val REQUEST_CONTACTS_PERMISSION = 102
+        const val REQUEST_WRITE_CALL_LOG_PERMISSION = 103
+    }
 }

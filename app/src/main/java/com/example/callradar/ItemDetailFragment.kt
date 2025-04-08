@@ -151,64 +151,56 @@ class ItemDetailFragment : Fragment() {
 
     private fun updateContactInfo(contactInfo: ContactInfo) {
         try {
+            // Логирование для диагностики
+//            Log.d("ContactInfo", "Данные контакта: " +
+//                    "Имя='${contactInfo.displayName}', " +
+//                    "Имя из журнала='${item?.contactName}', " +
+//                    "Номера в контакте=${contactInfo.phoneNumbers?.size ?: 0}, " +
+//                    "Номера в журнале=${item?.allPhoneNumbers?.size ?: 0}")
+//
+//            if (item?.contactName != "Неизвестный") {
+//                Log.d("ContactInfo", "ID: ${contactInfo.id}")
+//                Log.d("ContactInfo", "displayName: ${contactInfo.displayName}")
+//                Log.d("ContactInfo", "firstName: ${contactInfo.firstName}")
+//                Log.d("ContactInfo", "lastName: ${contactInfo.lastName}")
+//                Log.d("ContactInfo", "middleName: ${contactInfo.middleName}")
+//                Log.d("ContactInfo", "nickname: ${contactInfo.nickname}")
+//                Log.d("ContactInfo", "organization: ${contactInfo.organization}")
+//                Log.d("ContactInfo", "notes: ${contactInfo.notes}")
+//                Log.d("ContactInfo", "birthday: ${contactInfo.birthday}")
+//                Log.d("ContactInfo", "ringtoneUri: ${contactInfo.ringtoneUri}")
+//                Log.d("ContactInfo", "photoUri: ${contactInfo.photoUri}")
+//                Log.d(
+//                    "ContactInfo",
+//                    "groups: ${contactInfo.groups.size} groups: ${contactInfo.groups}"
+//                )
+//                Log.d(
+//                    "ContactInfo",
+//                    "phone numbers: ${contactInfo.phoneNumbers.size} phone numbers: ${contactInfo.phoneNumbers}\""
+//                )
+//                Log.d(
+//                    "ContactInfo",
+//                    "socialNetworks: ${contactInfo.socialNetworks.size} socialNetworks: ${contactInfo.socialNetworks}"
+//                )
+//                Log.d(
+//                    "ContactInfo",
+//                    "emails: ${contactInfo.emails.size} emails: ${contactInfo.emails}\""
+//                )
+//                Log.d(
+//                    "ContactInfo",
+//                    "addresses: ${contactInfo.addresses.size} emails: ${contactInfo.addresses}\""
+//                )
+//                Log.d("ContactInfo", "starred: ${contactInfo.starred}\"")
+//            }
+
+// Проверка на доступность Fragment и binding
             if (!isAdded || context == null || _binding == null) return
-
-            // Улучшенное определение типа контакта
-            val hasValidContactData = contactInfo.displayName.isNotEmpty() ||
-                    !contactInfo.phoneNumbers.isNullOrEmpty()
-
-            val isActuallyUnknown = !hasValidContactData &&
-                    (item?.contactName.isNullOrEmpty() ||
-                            item?.contactName == FormatPhoneNumber.formatPhoneNumber(item!!.number))
 
             val searchResult = helper.searchPhone(item!!.number)
             val isCityCall = searchResult.startsWith("г.") &&
                     (!searchResult.contains("обл.") && !searchResult.contains("АО") && !searchResult.contains("округ"))
 
-
-            // Логирование для диагностики
-            Log.d("ContactInfo", "Данные контакта: " +
-                    "Имя='${contactInfo.displayName}', " +
-                    "Имя из журнала='${item?.contactName}', " +
-                    "Номера в контакте=${contactInfo.phoneNumbers?.size ?: 0}, " +
-                    "Номера в журнале=${item?.allPhoneNumbers?.size ?: 0}")
-
-            if (item?.contactName != "Неизвестный") {
-                Log.d("ContactInfo", "ID: ${contactInfo.id}")
-                Log.d("ContactInfo", "displayName: ${contactInfo.displayName}")
-                Log.d("ContactInfo", "firstName: ${contactInfo.firstName}")
-                Log.d("ContactInfo", "lastName: ${contactInfo.lastName}")
-                Log.d("ContactInfo", "middleName: ${contactInfo.middleName}")
-                Log.d("ContactInfo", "nickname: ${contactInfo.nickname}")
-                Log.d("ContactInfo", "organization: ${contactInfo.organization}")
-                Log.d("ContactInfo", "notes: ${contactInfo.notes}")
-                Log.d("ContactInfo", "birthday: ${contactInfo.birthday}")
-                Log.d("ContactInfo", "ringtoneUri: ${contactInfo.ringtoneUri}")
-                Log.d("ContactInfo", "photoUri: ${contactInfo.photoUri}")
-                Log.d(
-                    "ContactInfo",
-                    "groups: ${contactInfo.groups.size} groups: ${contactInfo.groups}"
-                )
-                Log.d(
-                    "ContactInfo",
-                    "phone numbers: ${contactInfo.phoneNumbers.size} phone numbers: ${contactInfo.phoneNumbers}\""
-                )
-                Log.d(
-                    "ContactInfo",
-                    "socialNetworks: ${contactInfo.socialNetworks.size} socialNetworks: ${contactInfo.socialNetworks}"
-                )
-                Log.d(
-                    "ContactInfo",
-                    "emails: ${contactInfo.emails.size} emails: ${contactInfo.emails}\""
-                )
-                Log.d(
-                    "ContactInfo",
-                    "addresses: ${contactInfo.addresses.size} emails: ${contactInfo.addresses}\""
-                )
-                Log.d("ContactInfo", "starred: ${contactInfo.starred}\"")
-            }
-
-            // 1. Получаем номера в порядке приоритета
+// 1. Получаем номера в порядке приоритета
             val numbersToShow = when {
                 // Если есть номера в контакте
                 !contactInfo.phoneNumbers.isNullOrEmpty() -> {
@@ -230,35 +222,23 @@ class ItemDetailFragment : Fragment() {
 
             Log.d("ContactInfo", "Номера для отображения (${numbersToShow.size}): ${numbersToShow.joinToString()}")
 
-// 2. Определяем отображаемое имя
+// 2. Определяем основной номер для отображения
             val mainNumber = when {
                 !contactInfo.phoneNumbers.isNullOrEmpty() -> contactInfo.phoneNumbers.first().number
                 !item?.allPhoneNumbers.isNullOrEmpty() -> item!!.allPhoneNumbers.first()
                 item?.number != null -> item!!.number
                 else -> null
             }
+            Log.d("ContactInfo", "MainNumber - ${mainNumber.toString()}")
+// 3. Определяем отображаемое имя в заголовке
             val displayName = when {
-                // Случай 1: Есть имя в контакте
-                contactInfo.displayName.isNotEmpty() -> contactInfo.displayName
-
-                // Случай 2: Есть номер, но нет имени (неизвестный контакт)
-                mainNumber != null -> {
-                    val formatted = FormatPhoneNumber.formatPhoneNumber(mainNumber, false)
-                    Log.d("DisplayName", "Showing formatted number for unknown contact: $formatted")
-                    formatted
-                }
-
-                // Случай 3: Полное отсутствие данных (крайний случай)
-                else -> {
-                    Log.e("DisplayName", "No contact name or phone number available!")
-                    "Номер недоступен"
-                }
-            }
+                item?.contactName == "Неизвестный" -> FormatPhoneNumber.formatPhoneNumber(mainNumber.toString(), isCityCall)
+                else -> contactInfo.displayName }
 
             binding.toolbarLayout?.title = displayName
-            Log.d("DisplayName", displayName)
+            Log.d("ContactInfo", displayName)
 
-            // 3. Отображаем номера
+// 4. Отображаем блок с номерами телефонов
             binding.callLogsContainer?.apply {
                 findViewWithTag<View?>("contact_info_tag")?.let { removeView(it) }
 
@@ -272,7 +252,10 @@ class ItemDetailFragment : Fragment() {
                 numbersContainer.removeAllViews()
 
                 numbersToShow.forEachIndexed {index, number ->
-                    try {
+                    Log.d("ContactInfo", "numbersToShow ${number}")
+                    val searchPlace = helper.searchPhone(item!!.number)
+                    try{
+
                         val numberItem = layoutInflater.inflate(
                             R.layout.detail_phone_number, numbersContainer, false
                         ).apply {
@@ -284,10 +267,8 @@ class ItemDetailFragment : Fragment() {
                                 else -> "(мобильный)"
                             }
 
-                            findViewById<TextView>(R.id.place)?.text = when {
-                                hasValidContactData -> helper.searchPhone(number)
-                                else -> helper.searchPhone(number)
-                            }
+                            findViewById<TextView>(R.id.place)?.text = searchPlace
+
 
                             findViewById<ImageButton>(R.id.call_button)?.setOnClickListener {
                                 makeCall(number)
@@ -300,21 +281,28 @@ class ItemDetailFragment : Fragment() {
                         numbersContainer.addView(numberItem)
                     } catch (e: Exception) {
                         Log.e("ContactInfo", "Ошибка создания элемента для $number", e)
+
                     }
                 }
 
                 if (numbersContainer.childCount > 0) {
-                    addView(infoContainer)
+                    addView(infoContainer)  // unknown numbers
                 } else {
-                    Log.w("ContactInfo", "Не удалось отобразить номера")
+                    val searchPlace = helper.searchPhone(item!!.number)
+                    Log.w("ContactInfo", "Не удалось найти номера")
                     // Fallback вариант
                     val fallbackNumber = numbersToShow.firstOrNull() ?: return@apply
                     val fallbackItem = layoutInflater.inflate(
                         R.layout.detail_phone_number, numbersContainer, false
                     ).apply {
                         findViewById<TextView>(R.id.phone_number)?.text =
-                            FormatPhoneNumber.formatPhoneNumber(fallbackNumber, false)
+                            FormatPhoneNumber.formatPhoneNumber(fallbackNumber, isCityCall)
                         findViewById<TextView>(R.id.call_source)?.text = "(основной)"
+//                        findViewById<TextView>(R.id.call_source)?.text = when {
+//                            searchPlace.startsWith("г.") -> "(городской)"
+//                            else -> "(мобильный)"
+//                        }
+                        findViewById<TextView>(R.id.place)?.text = searchPlace
                     }
                     numbersContainer.addView(fallbackItem)
                     addView(infoContainer)

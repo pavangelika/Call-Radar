@@ -8,7 +8,6 @@ import android.content.ContentResolver
 import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
-import android.database.Cursor
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Handler
@@ -17,6 +16,18 @@ import android.provider.ContactsContract
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.example.callradar.R
+import com.example.callradar.datamodels.AddressInfo
+import com.example.callradar.datamodels.AddressType
+import com.example.callradar.datamodels.CallDetail
+import com.example.callradar.datamodels.CallLogEntry
+import com.example.callradar.datamodels.ContactInfo
+import com.example.callradar.datamodels.Detail
+import com.example.callradar.datamodels.EmailInfo
+import com.example.callradar.datamodels.EmailType
+import com.example.callradar.datamodels.GroupedCallLog
+import com.example.callradar.datamodels.PhoneNumberInfo
+import com.example.callradar.datamodels.SocialNetworkInfo
+import com.example.callradar.datamodels.SocialNetworkType
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.HashMap
@@ -565,7 +576,8 @@ object CallLogDataHelper {
             "${CallLog.Calls.DATE} DESC"
         )?.use { cursor ->
             while (cursor.moveToNext()) {
-                callLogs.add(CallLogEntry(
+                callLogs.add(
+                    CallLogEntry(
                     number = cursor.getString(cursor.getColumnIndex(CallLog.Calls.NUMBER)) ?: "",
                     type = cursor.getInt(cursor.getColumnIndex(CallLog.Calls.TYPE)),
                     date = cursor.getLong(cursor.getColumnIndex(CallLog.Calls.DATE)),
@@ -575,7 +587,8 @@ object CallLogDataHelper {
                         context,
                         cursor.getString(cursor.getColumnIndex(CallLog.Calls.PHONE_ACCOUNT_COMPONENT_NAME))
                     ) ?: "Мобильный"
-                ))
+                )
+                )
             }
         }
         return callLogs

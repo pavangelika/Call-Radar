@@ -26,10 +26,10 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import com.example.callradar.callog.CallDetail
+import com.example.callradar.datamodels.CallDetail
 import com.example.callradar.callog.CallLogDataHelper
-import com.example.callradar.callog.ContactInfo
-import com.example.callradar.callog.PhoneNumberInfo
+import com.example.callradar.datamodels.ContactInfo
+import com.example.callradar.datamodels.PhoneNumberInfo
 import com.example.callradar.databinding.FragmentItemDetailBinding
 import com.example.callradar.utils.GetRegionFromNumber
 
@@ -153,47 +153,46 @@ class ItemDetailFragment : Fragment() {
 
     private fun updateContactInfo(contactInfo: ContactInfo) {
         try {
-            // Логирование для диагностики
-//            Log.d("ContactInfo", "Данные контакта: " +
-//                    "Имя='${contactInfo.displayName}', " +
-//                    "Имя из журнала='${item?.contactName}', " +
-//                    "Номера в контакте=${contactInfo.phoneNumbers?.size ?: 0}, " +
-//                    "Номера в журнале=${item?.allPhoneNumbers?.size ?: 0}")
-//
-//            if (item?.contactName != "Неизвестный") {
-//                Log.d("ContactInfo", "ID: ${contactInfo.id}")
-//                Log.d("ContactInfo", "displayName: ${contactInfo.displayName}")
-//                Log.d("ContactInfo", "firstName: ${contactInfo.firstName}")
-//                Log.d("ContactInfo", "lastName: ${contactInfo.lastName}")
-//                Log.d("ContactInfo", "middleName: ${contactInfo.middleName}")
-//                Log.d("ContactInfo", "nickname: ${contactInfo.nickname}")
-//                Log.d("ContactInfo", "organization: ${contactInfo.organization}")
-//                Log.d("ContactInfo", "notes: ${contactInfo.notes}")
-//                Log.d("ContactInfo", "birthday: ${contactInfo.birthday}")
-//                Log.d("ContactInfo", "ringtoneUri: ${contactInfo.ringtoneUri}")
-//                Log.d("ContactInfo", "photoUri: ${contactInfo.photoUri}")
-//                Log.d(
-//                    "ContactInfo",
-//                    "groups: ${contactInfo.groups.size} groups: ${contactInfo.groups}"
-//                )
-//                Log.d(
-//                    "ContactInfo",
-//                    "phone numbers: ${contactInfo.phoneNumbers.size} phone numbers: ${contactInfo.phoneNumbers}\""
-//                )
-//                Log.d(
-//                    "ContactInfo",
-//                    "socialNetworks: ${contactInfo.socialNetworks.size} socialNetworks: ${contactInfo.socialNetworks}"
-//                )
-//                Log.d(
-//                    "ContactInfo",
-//                    "emails: ${contactInfo.emails.size} emails: ${contactInfo.emails}\""
-//                )
-//                Log.d(
-//                    "ContactInfo",
-//                    "addresses: ${contactInfo.addresses.size} emails: ${contactInfo.addresses}\""
-//                )
-//                Log.d("ContactInfo", "starred: ${contactInfo.starred}\"")
-//            }
+            Log.d("ContactInfo", "Данные контакта: " +
+                    "Имя='${contactInfo.displayName}', " +
+                    "Имя из журнала='${item?.contactName}', " +
+                    "Номера в контакте=${contactInfo.phoneNumbers?.size ?: 0}, " +
+                    "Номера в журнале=${item?.allPhoneNumbers?.size ?: 0}")
+
+            if (item?.contactName != "Неизвестный") {
+                Log.d("ContactInfo", "ID: ${contactInfo.id}")
+                Log.d("ContactInfo", "displayName: ${contactInfo.displayName}")
+                Log.d("ContactInfo", "firstName: ${contactInfo.firstName}")
+                Log.d("ContactInfo", "lastName: ${contactInfo.lastName}")
+                Log.d("ContactInfo", "middleName: ${contactInfo.middleName}")
+                Log.d("ContactInfo", "nickname: ${contactInfo.nickname}")
+                Log.d("ContactInfo", "organization: ${contactInfo.organization}")
+                Log.d("ContactInfo", "notes: ${contactInfo.notes}")
+                Log.d("ContactInfo", "birthday: ${contactInfo.birthday}")
+                Log.d("ContactInfo", "ringtoneUri: ${contactInfo.ringtoneUri}")
+                Log.d("ContactInfo", "photoUri: ${contactInfo.photoUri}")
+                Log.d(
+                    "ContactInfo",
+                    "groups: ${contactInfo.groups.size} groups: ${contactInfo.groups}"
+                )
+                Log.d(
+                    "ContactInfo",
+                    "phone numbers: ${contactInfo.phoneNumbers.size} phone numbers: ${contactInfo.phoneNumbers}\""
+                )
+                Log.d(
+                    "ContactInfo",
+                    "socialNetworks: ${contactInfo.socialNetworks.size} socialNetworks: ${contactInfo.socialNetworks}"
+                )
+                Log.d(
+                    "ContactInfo",
+                    "emails: ${contactInfo.emails.size} emails: ${contactInfo.emails}\""
+                )
+                Log.d(
+                    "ContactInfo",
+                    "addresses: ${contactInfo.addresses.size} emails: ${contactInfo.addresses}\""
+                )
+                Log.d("ContactInfo", "starred: ${contactInfo.starred}\"")
+            }
 
 // Проверка на доступность Fragment и binding
             if (!isAdded || context == null || _binding == null) return

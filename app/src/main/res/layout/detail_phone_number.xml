@@ -78,6 +78,7 @@
                 android:layout_marginStart="8dp"
                 android:src="@drawable/ic_sms"
                 android:background="?attr/selectableItemBackgroundBorderless"/>
+
         </LinearLayout>
     </LinearLayout>
 
@@ -92,4 +93,20 @@
         android:padding="12dp"
         android:textStyle="bold"
         android:visibility="gone"/>
+
+<!--    <Button-->
+<!--        android:id="@+id/telegram_button"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:text="Написать в Telegram"-->
+<!--        android:visibility="gone"-->
+<!--        android:drawableStart="@drawable/ic_telegram"-->
+<!--        android:drawableTint="@color/white" />-->
+
+<!--    <TextView-->
+<!--        android:id="@+id/telegram_username"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:textStyle="bold"-->
+<!--        android:textColor="@color/telegram_blue" />-->
 </LinearLayout>

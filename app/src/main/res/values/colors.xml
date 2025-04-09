@@ -23,4 +23,6 @@
     <color name="missed_call_primary">#B00020</color>
     <color name="missed_call_secondary">#FFCDD2</color>
 
+    <color name="telegram_blue">#0088CC</color>
+    <color name="white">#FFFFFF</color>
 </resources>

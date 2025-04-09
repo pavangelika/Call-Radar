@@ -22,7 +22,7 @@ import com.example.callradar.databinding.FragmentItemListBinding
 import com.example.callradar.databinding.ItemListContentBinding
 import com.example.callradar.callog.CallLogDataHelper
 import com.example.callradar.callog.CallLogDataHelper.getCallTypeIcon
-import com.example.callradar.callog.GroupedCallLog
+import com.example.callradar.datamodels.GroupedCallLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

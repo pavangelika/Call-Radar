@@ -1,4 +1,4 @@
-package com.example.callradar.callog
+package com.example.callradar.datamodels
 
 import android.provider.ContactsContract
 
